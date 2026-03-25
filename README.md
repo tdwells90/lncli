@@ -1,6 +1,6 @@
 # lncli
 
-A Linear CLI built for AI agents. Defaults to [TOON](https://github.com/toon-format/spec) output to minimize token usage, with full CRUD support across Linear's core resources.
+A Linear CLI built for AI agents, written in Rust. Defaults to [TOON](https://github.com/toon-format/spec) output to minimize token usage, with full CRUD support across Linear's core resources.
 
 ## Install
 
