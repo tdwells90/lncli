@@ -89,7 +89,7 @@ async fn create(
             let issue_id = resolve_issue_id(client, issue_val).await?;
             let doc_url = format!(
                 "https://linear.app/document/{}",
-                doc.slug_id.as_deref().unwrap_or(&doc.id)
+                &doc.id
             );
             let attach_input = serde_json::json!({
                 "issueId": issue_id,

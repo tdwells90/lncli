@@ -83,9 +83,6 @@ async fn list(
     if let Some(n) = around_active {
         let now = chrono::Utc::now();
         let active_idx = cycles.iter().position(|c| {
-            if c.completed_at.is_some() {
-                return false;
-            }
             let started = c
                 .starts_at
                 .as_deref()

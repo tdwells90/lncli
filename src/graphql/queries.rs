@@ -7,19 +7,16 @@ pub const ISSUE_CORE_FIELDS: &str = "
     description
     branchName
     priority
-    estimate
-    createdAt
-    updatedAt
 ";
 
 pub const ISSUE_RELATIONS: &str = "
-    state { id name color type }
-    assignee { id name displayName email }
-    team { id key name }
+    state { id name type }
+    assignee { id name }
+    team { id key }
     project { id name }
-    cycle { id name number startsAt endsAt }
+    cycle { id name number }
     projectMilestone { id name }
-    labels { nodes { id name color } }
+    labels { nodes { id name } }
     parent { id identifier title }
     children { nodes { id identifier title } }
 ";
@@ -29,9 +26,7 @@ pub const ISSUE_COMMENTS_FRAGMENT: &str = "
         nodes {
             id
             body
-            createdAt
-            updatedAt
-            user { id name displayName email }
+            user { name }
         }
     }
 ";
@@ -113,15 +108,12 @@ pub const PROJECTS_LIST: &str = "
             nodes {
                 id
                 name
-                description
                 state
                 progress
                 startDate
                 targetDate
-                createdAt
-                updatedAt
-                teams { nodes { id key name } }
-                lead { id name displayName email }
+                teams { nodes { key } }
+                lead { name }
             }
         }
     }
@@ -135,18 +127,12 @@ pub const PROJECT_READ: &str = "
             description
             content
             state
-            icon
-            color
             priority
             progress
             startDate
             targetDate
-            createdAt
-            updatedAt
-            url
-            teams { nodes { id key name } }
-            lead { id name displayName email }
-            members { nodes { id name displayName email } }
+            teams { nodes { key name } }
+            lead { name }
         }
     }
 ";
@@ -158,19 +144,7 @@ pub const PROJECT_CREATE: &str = "
             project {
                 id
                 name
-                description
                 state
-                icon
-                color
-                priority
-                progress
-                startDate
-                targetDate
-                createdAt
-                updatedAt
-                url
-                teams { nodes { id key name } }
-                lead { id name displayName email }
             }
         }
     }
@@ -183,19 +157,7 @@ pub const PROJECT_UPDATE: &str = "
             project {
                 id
                 name
-                description
                 state
-                icon
-                color
-                priority
-                progress
-                startDate
-                targetDate
-                createdAt
-                updatedAt
-                url
-                teams { nodes { id key name } }
-                lead { id name displayName email }
             }
         }
     }
@@ -295,7 +257,6 @@ pub const ISSUE_CREATE: &str = "
                 id
                 identifier
                 title
-                url
             }
         }
     }
@@ -309,7 +270,6 @@ pub const ISSUE_UPDATE: &str = "
                 id
                 identifier
                 title
-                url
             }
         }
     }
@@ -366,8 +326,7 @@ pub const COMMENT_CREATE: &str = "
             comment {
                 id
                 body
-                createdAt
-                user { id name displayName email }
+                user { name }
             }
         }
     }
@@ -380,9 +339,7 @@ pub const COMMENT_UPDATE: &str = "
             comment {
                 id
                 body
-                createdAt
-                updatedAt
-                user { id name displayName email }
+                user { name }
             }
         }
     }
@@ -449,9 +406,8 @@ pub const CYCLES_LIST: &str = "
                 number
                 startsAt
                 endsAt
-                completedAt
                 progress
-                team { id key name }
+                team { key name }
             }
         }
     }
@@ -466,9 +422,8 @@ pub fn cycle_read_query() -> String {
                 number
                 startsAt
                 endsAt
-                completedAt
                 progress
-                team {{ id key name }}
+                team {{ key name }}
                 issues(first: $issuesFirst) {{
                     nodes {{
                         {ISSUE_CORE_FIELDS}
@@ -490,9 +445,8 @@ pub const CYCLE_CREATE: &str = "
                 number
                 startsAt
                 endsAt
-                completedAt
                 progress
-                team { id key name }
+                team { key name }
             }
         }
     }
@@ -508,9 +462,8 @@ pub const CYCLE_UPDATE: &str = "
                 number
                 startsAt
                 endsAt
-                completedAt
                 progress
-                team { id key name }
+                team { key name }
             }
         }
     }
@@ -543,7 +496,6 @@ pub const PROJECT_MILESTONES_LIST: &str = "
                 name
                 description
                 targetDate
-                sortOrder
             }
         }
     }
@@ -557,7 +509,6 @@ pub fn project_milestone_read_query() -> String {
                 name
                 description
                 targetDate
-                sortOrder
                 issues(first: $issuesFirst) {{
                     nodes {{
                         {ISSUE_CORE_FIELDS}
@@ -578,7 +529,6 @@ pub const PROJECT_MILESTONE_CREATE: &str = "
                 name
                 description
                 targetDate
-                sortOrder
             }
         }
     }
@@ -593,7 +543,6 @@ pub const PROJECT_MILESTONE_UPDATE: &str = "
                 name
                 description
                 targetDate
-                sortOrder
             }
         }
     }
@@ -628,15 +577,9 @@ pub const DOCUMENTS_LIST: &str = "
         documents(first: $first, filter: $filter, orderBy: updatedAt) {
             nodes {
                 id
-                slugId
                 title
-                icon
-                color
                 content
-                createdAt
-                updatedAt
-                project { id name }
-                creator { id name displayName }
+                project { name }
             }
         }
     }
@@ -665,15 +608,9 @@ pub const DOCUMENT_CREATE: &str = "
             success
             document {
                 id
-                slugId
                 title
-                icon
-                color
                 content
-                createdAt
-                updatedAt
-                project { id name }
-                creator { id name displayName }
+                project { name }
             }
         }
     }
@@ -685,15 +622,9 @@ pub const DOCUMENT_UPDATE: &str = "
             success
             document {
                 id
-                slugId
                 title
-                icon
-                color
                 content
-                createdAt
-                updatedAt
-                project { id name }
-                creator { id name displayName }
+                project { name }
             }
         }
     }

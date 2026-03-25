@@ -376,7 +376,8 @@ async fn update(
             .as_ref()
             .and_then(|i| i.team.as_ref())
             .ok_or_else(|| CliError::Other("Issue has no team".to_string()))?;
-        let state_id = resolve_status_id(client, &team.id, status_val).await?;
+        let team_id = team.id.as_deref().ok_or_else(|| CliError::Other("Issue team has no id".to_string()))?;
+        let state_id = resolve_status_id(client, team_id, status_val).await?;
         input.insert("stateId".to_string(), serde_json::json!(state_id));
     }
 
@@ -386,7 +387,7 @@ async fn update(
             let team_id = issue_data
                 .as_ref()
                 .and_then(|i| i.team.as_ref())
-                .map(|t| t.id.as_str());
+                .and_then(|t| t.id.as_deref());
             let new_label_ids = resolve_label_ids(client, labels_val, team_id).await?;
 
             match label_by {
@@ -433,7 +434,7 @@ async fn update(
             issue_data
                 .as_ref()
                 .and_then(|i| i.project.as_ref())
-                .map(|p| p.id.clone())
+                .and_then(|p| p.id.clone())
                 .ok_or_else(|| CliError::RequiresParameter {
                     flag: "--project-milestone".to_string(),
                     required: "--project".to_string(),
@@ -458,7 +459,7 @@ async fn update(
         let team_id = issue_data
             .as_ref()
             .and_then(|i| i.team.as_ref())
-            .map(|t| t.id.clone())
+            .and_then(|t| t.id.clone())
             .ok_or_else(|| CliError::Other("Issue has no team".to_string()))?;
         let cycle_id = crate::commands::resolve_cycle_id(client, &team_id, cycle_val).await?;
         input.insert("cycleId".to_string(), serde_json::json!(cycle_id));

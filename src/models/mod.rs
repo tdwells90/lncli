@@ -12,18 +12,23 @@ pub struct IdName {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserRef {
-    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
     pub name: String,
-    pub display_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TeamRef {
-    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
     pub key: String,
-    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,7 +36,6 @@ pub struct TeamRef {
 pub struct IssueState {
     pub id: String,
     pub name: String,
-    pub color: Option<String>,
     #[serde(rename = "type")]
     pub state_type: Option<String>,
 }
@@ -41,7 +45,6 @@ pub struct IssueState {
 pub struct LabelRef {
     pub id: String,
     pub name: String,
-    pub color: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -58,8 +61,6 @@ pub struct CycleRef {
     pub id: String,
     pub name: Option<String>,
     pub number: Option<i32>,
-    pub starts_at: Option<String>,
-    pub ends_at: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -78,7 +79,8 @@ pub struct Nodes<T> {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectRef {
-    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
     pub name: String,
 }
 
@@ -156,21 +158,24 @@ pub struct LabelOutput {
 pub struct Project {
     pub id: String,
     pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<String>,
-    pub icon: Option<String>,
-    pub color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub priority: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub progress: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub start_date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub target_date: Option<String>,
-    pub created_at: Option<String>,
-    pub updated_at: Option<String>,
-    pub url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub teams: Option<Nodes<TeamRef>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub lead: Option<UserRef>,
-    pub members: Option<Nodes<UserRef>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -221,9 +226,6 @@ pub struct Issue {
     pub description: Option<String>,
     pub branch_name: Option<String>,
     pub priority: Option<i32>,
-    pub estimate: Option<f64>,
-    pub created_at: Option<String>,
-    pub updated_at: Option<String>,
     pub state: Option<IssueState>,
     pub assignee: Option<UserRef>,
     pub team: Option<TeamRef>,
@@ -275,7 +277,6 @@ pub struct IssueBrief {
     pub id: String,
     pub identifier: String,
     pub title: String,
-    pub url: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -299,8 +300,6 @@ pub struct IssueDeleteResponse {
 pub struct Comment {
     pub id: String,
     pub body: String,
-    pub created_at: Option<String>,
-    pub updated_at: Option<String>,
     pub user: Option<UserRef>,
 }
 
@@ -366,7 +365,6 @@ pub struct Cycle {
     pub number: Option<i32>,
     pub starts_at: Option<String>,
     pub ends_at: Option<String>,
-    pub completed_at: Option<String>,
     pub progress: Option<f64>,
     pub team: Option<TeamRef>,
     pub issues: Option<Nodes<Issue>>,
@@ -412,7 +410,6 @@ pub struct ProjectMilestone {
     pub name: String,
     pub description: Option<String>,
     pub target_date: Option<String>,
-    pub sort_order: Option<f64>,
     pub issues: Option<Nodes<Issue>>,
 }
 
@@ -459,15 +456,9 @@ pub struct ProjectMilestoneDeleteResponse {
 #[serde(rename_all = "camelCase")]
 pub struct Document {
     pub id: String,
-    pub slug_id: Option<String>,
     pub title: String,
-    pub icon: Option<String>,
-    pub color: Option<String>,
     pub content: Option<String>,
-    pub created_at: Option<String>,
-    pub updated_at: Option<String>,
     pub project: Option<ProjectRef>,
-    pub creator: Option<UserRef>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
