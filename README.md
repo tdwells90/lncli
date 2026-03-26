@@ -7,6 +7,7 @@ A Linear CLI built for AI agents, written in Rust. Defaults to [TOON](https://gi
 ```bash
 curl -fsSL https://raw.githubusercontent.com/tdwells90/lncli/main/install.sh | sh
 ```
+
 ## Authentication
 
 Provide your Linear API token via (in priority order):

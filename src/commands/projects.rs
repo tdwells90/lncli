@@ -8,6 +8,7 @@ use crate::models::{
 };
 use crate::utils::error::CliError;
 use crate::utils::output;
+use crate::utils::stdin;
 
 pub async fn execute(client: &GraphqlClient, args: ProjectsArgs) -> Result<(), CliError> {
     match args.command {
@@ -27,6 +28,12 @@ pub async fn execute(client: &GraphqlClient, args: ProjectsArgs) -> Result<(), C
             icon,
             color,
         } => {
+            stdin::validate_at_most_one_stdin(&[
+                ("--description", description.as_deref()),
+                ("--content", content.as_deref()),
+            ])?;
+            let description = stdin::resolve_optional(description)?;
+            let content = stdin::resolve_optional(content)?;
             create(
                 client,
                 &name,
@@ -55,6 +62,12 @@ pub async fn execute(client: &GraphqlClient, args: ProjectsArgs) -> Result<(), C
             color,
             teams,
         } => {
+            stdin::validate_at_most_one_stdin(&[
+                ("--description", description.as_deref()),
+                ("--content", content.as_deref()),
+            ])?;
+            let description = stdin::resolve_optional(description)?;
+            let content = stdin::resolve_optional(content)?;
             update(
                 client,
                 &project_id_or_name,

@@ -10,6 +10,7 @@ use crate::utils::embed_parser;
 use crate::utils::error::CliError;
 use crate::utils::identifiers::{is_uuid, parse_issue_identifier};
 use crate::utils::output;
+use crate::utils::stdin;
 
 pub async fn execute(client: &GraphqlClient, args: IssuesArgs) -> Result<(), CliError> {
     match args.command {
@@ -37,6 +38,7 @@ pub async fn execute(client: &GraphqlClient, args: IssuesArgs) -> Result<(), Cli
             status,
             parent_ticket,
         } => {
+            let description = stdin::resolve_optional(description)?;
             create(
                 client,
                 &title,
@@ -71,6 +73,7 @@ pub async fn execute(client: &GraphqlClient, args: IssuesArgs) -> Result<(), Cli
             cycle,
             clear_cycle,
         } => {
+            let description = stdin::resolve_optional(description)?;
             update(
                 client,
                 &issue_id,

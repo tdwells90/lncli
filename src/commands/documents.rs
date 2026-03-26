@@ -9,6 +9,7 @@ use crate::models::{
 use crate::utils::error::CliError;
 use crate::utils::identifiers::extract_document_id;
 use crate::utils::output;
+use crate::utils::stdin;
 
 pub async fn execute(client: &GraphqlClient, args: DocumentsArgs) -> Result<(), CliError> {
     match args.command {
@@ -20,7 +21,10 @@ pub async fn execute(client: &GraphqlClient, args: DocumentsArgs) -> Result<(), 
             icon,
             color,
             attach_to,
-        } => create(client, &title, content, project, team, icon, color, attach_to).await,
+        } => {
+            let content = stdin::resolve_optional(content)?;
+            create(client, &title, content, project, team, icon, color, attach_to).await
+        }
         DocumentsCommand::Update {
             document_id,
             title,
@@ -28,7 +32,10 @@ pub async fn execute(client: &GraphqlClient, args: DocumentsArgs) -> Result<(), 
             project,
             icon,
             color,
-        } => update(client, &document_id, title, content, project, icon, color).await,
+        } => {
+            let content = stdin::resolve_optional(content)?;
+            update(client, &document_id, title, content, project, icon, color).await
+        }
         DocumentsCommand::Read { document_id } => read(client, &document_id).await,
         DocumentsCommand::List {
             project,

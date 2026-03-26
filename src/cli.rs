@@ -113,7 +113,7 @@ pub enum IssuesCommand {
         /// Issue title
         title: String,
 
-        /// Issue description (markdown)
+        /// Issue description in markdown (use - for stdin)
         #[arg(short, long)]
         description: Option<String>,
 
@@ -169,7 +169,7 @@ pub enum IssuesCommand {
         #[arg(short, long)]
         title: Option<String>,
 
-        /// New description (markdown)
+        /// New description in markdown (use - for stdin)
         #[arg(short, long)]
         description: Option<String>,
 
@@ -252,7 +252,7 @@ pub enum CommentsCommand {
         /// Issue UUID or identifier like ABC-123
         issue_id: String,
 
-        /// Comment body in markdown (required)
+        /// Comment body in markdown (use - for stdin)
         #[arg(long)]
         body: String,
     },
@@ -262,7 +262,7 @@ pub enum CommentsCommand {
         /// Comment UUID
         comment_id: String,
 
-        /// New comment body in markdown
+        /// New comment body in markdown (use - for stdin)
         #[arg(long)]
         body: String,
     },
@@ -290,7 +290,7 @@ pub enum DocumentsCommand {
         #[arg(long)]
         title: String,
 
-        /// Document content (markdown)
+        /// Document content in markdown (use - for stdin)
         #[arg(long)]
         content: Option<String>,
 
@@ -324,7 +324,7 @@ pub enum DocumentsCommand {
         #[arg(long)]
         title: Option<String>,
 
-        /// New document content (markdown)
+        /// New document content in markdown (use - for stdin)
         #[arg(long)]
         content: Option<String>,
 
@@ -516,11 +516,11 @@ pub enum ProjectsCommand {
         #[arg(long)]
         teams: String,
 
-        /// Project description
+        /// Project description (use - for stdin)
         #[arg(short, long)]
         description: Option<String>,
 
-        /// Project content (markdown)
+        /// Project content in markdown (use - for stdin)
         #[arg(long)]
         content: Option<String>,
 
@@ -558,11 +558,11 @@ pub enum ProjectsCommand {
         #[arg(short, long)]
         name: Option<String>,
 
-        /// New description
+        /// New description (use - for stdin)
         #[arg(short, long)]
         description: Option<String>,
 
-        /// New content (markdown)
+        /// New content in markdown (use - for stdin)
         #[arg(long)]
         content: Option<String>,
 
@@ -645,7 +645,7 @@ pub enum CyclesCommand {
         #[arg(long)]
         ends_at: String,
 
-        /// Cycle description
+        /// Cycle description (use - for stdin)
         #[arg(short, long)]
         description: Option<String>,
     },
@@ -671,7 +671,7 @@ pub enum CyclesCommand {
         #[arg(long)]
         ends_at: Option<String>,
 
-        /// New description
+        /// New description (use - for stdin)
         #[arg(short, long)]
         description: Option<String>,
     },
@@ -735,7 +735,7 @@ pub enum ProjectMilestonesCommand {
         #[arg(long)]
         project: String,
 
-        /// Milestone description
+        /// Milestone description (use - for stdin)
         #[arg(short, long)]
         description: Option<String>,
 
@@ -767,7 +767,7 @@ pub enum ProjectMilestonesCommand {
         #[arg(short, long)]
         name: Option<String>,
 
-        /// New milestone description
+        /// New milestone description (use - for stdin)
         #[arg(short, long)]
         description: Option<String>,
 

@@ -6,6 +6,7 @@ use crate::models::{CycleCreateResponse, CycleUpdateResponse, CyclesResponse, Si
 use crate::utils::error::CliError;
 use crate::utils::identifiers::is_uuid;
 use crate::utils::output;
+use crate::utils::stdin;
 
 pub async fn execute(client: &GraphqlClient, args: CyclesArgs) -> Result<(), CliError> {
     match args.command {
@@ -20,7 +21,10 @@ pub async fn execute(client: &GraphqlClient, args: CyclesArgs) -> Result<(), Cli
             starts_at,
             ends_at,
             description,
-        } => create(client, &team, name, &starts_at, &ends_at, description).await,
+        } => {
+            let description = stdin::resolve_optional(description)?;
+            create(client, &team, name, &starts_at, &ends_at, description).await
+        }
         CyclesCommand::Update {
             cycle_id_or_name,
             team,
@@ -29,6 +33,7 @@ pub async fn execute(client: &GraphqlClient, args: CyclesArgs) -> Result<(), Cli
             ends_at,
             description,
         } => {
+            let description = stdin::resolve_optional(description)?;
             update(
                 client,
                 &cycle_id_or_name,

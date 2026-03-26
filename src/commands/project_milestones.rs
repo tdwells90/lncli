@@ -9,6 +9,7 @@ use crate::models::{
 use crate::utils::error::CliError;
 use crate::utils::identifiers::is_uuid;
 use crate::utils::output;
+use crate::utils::stdin;
 
 pub async fn execute(
     client: &GraphqlClient,
@@ -32,7 +33,10 @@ pub async fn execute(
             project,
             description,
             target_date,
-        } => create(client, &name, &project, description, target_date).await,
+        } => {
+            let description = stdin::resolve_optional(description)?;
+            create(client, &name, &project, description, target_date).await
+        }
         ProjectMilestonesCommand::Update {
             milestone_id_or_name,
             project,
@@ -41,6 +45,7 @@ pub async fn execute(
             target_date,
             sort_order,
         } => {
+            let description = stdin::resolve_optional(description)?;
             update(
                 client,
                 &milestone_id_or_name,

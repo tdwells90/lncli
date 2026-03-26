@@ -5,11 +5,18 @@ use crate::graphql::queries;
 use crate::models::{CommentCreateResponse, CommentDeleteResponse, CommentUpdateResponse};
 use crate::utils::error::CliError;
 use crate::utils::output;
+use crate::utils::stdin;
 
 pub async fn execute(client: &GraphqlClient, args: CommentsArgs) -> Result<(), CliError> {
     match args.command {
-        CommentsCommand::Create { issue_id, body } => create(client, &issue_id, &body).await,
-        CommentsCommand::Update { comment_id, body } => update(client, &comment_id, &body).await,
+        CommentsCommand::Create { issue_id, body } => {
+            let body = stdin::resolve_value(body)?;
+            create(client, &issue_id, &body).await
+        }
+        CommentsCommand::Update { comment_id, body } => {
+            let body = stdin::resolve_value(body)?;
+            update(client, &comment_id, &body).await
+        }
         CommentsCommand::Delete { comment_id } => delete(client, &comment_id).await,
     }
 }
