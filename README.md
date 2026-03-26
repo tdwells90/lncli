@@ -19,7 +19,6 @@ Provide your Linear API token via (in priority order):
 
 Add the following to your `CLAUDE.md` or `AGENTS.md` to give your AI agent access to Linear:
 
-```markdown
 ## Linear
 
 Use the **`lncli`** CLI for all Linear operations (reading issues, updating status, creating issues, adding comments, etc.). Do NOT use Linear MCP tools — use `lncli` instead.
