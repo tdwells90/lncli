@@ -15,6 +15,17 @@ Provide your Linear API token via (in priority order):
 2. `LINEAR_API_TOKEN` environment variable
 3. `~/.linear_api_token` file
 
+## Agent setup
+
+Add the following to your `CLAUDE.md` or `AGENTS.md` to give your AI agent access to Linear:
+
+```markdown
+## Linear
+
+Use the **`lncli`** CLI for all Linear operations (reading issues, updating status, creating issues, adding comments, etc.). Do NOT use Linear MCP tools — use `lncli` instead.
+
+Run `lncli` or `lncli usage` to see all available commands and usage details.
+
 ## Output format
 
 Output defaults to TOON — a compact, token-efficient format for LLM consumption.
