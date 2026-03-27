@@ -26,6 +26,38 @@ Add the following to your `CLAUDE.md` or `AGENTS.md` to give your AI agent acces
 Use the **`lncli`** CLI for all Linear operations (reading issues, updating status, creating issues, adding comments, etc.). Do NOT use Linear MCP tools — use `lncli` instead.
 
 Run `lncli` or `lncli usage` to see all available commands and usage details.
+
+### Field filtering
+
+Limit output to specific fields using `--fields`:
+
+```
+lncli issues list --fields id,identifier,title,state
+[7]{id,identifier,title,state}:
+  "abc123...",ENG-123,"Fix auth bug","In Progress"
+```
+
+Nested fields use dot notation:
+
+```
+lncli issues list --fields id,title,assignee.email,team.name
+```
+
+Mandatory fields (id, identifier) are always included.
+
+### CLI examples
+
+```bash
+# Filter fields and nested data
+lncli issues list --fields id,identifier,title,assignee.email
+
+# Read a specific issue
+lncli issues read ENG-123
+
+# Create and update
+lncli issues create --title "Bug fix" --team-id <id>
+lncli issues update ENG-123 --state "Done"
+```
 ```
 
 ## Output format
