@@ -8,14 +8,21 @@ use crate::models::{
 };
 use crate::utils::embed_parser;
 use crate::utils::error::CliError;
+use crate::utils::fields::{self, filter_json_nodes};
 use crate::utils::identifiers::{is_uuid, parse_issue_identifier};
 use crate::utils::output;
 use crate::utils::stdin;
 
-pub async fn execute(client: &GraphqlClient, args: IssuesArgs) -> Result<(), CliError> {
+const ISSUE_MANDATORY_FIELDS: &[&str] = &["id", "identifier"];
+
+pub async fn execute(
+    client: &GraphqlClient,
+    args: IssuesArgs,
+    fields_filter: Option<&str>,
+) -> Result<(), CliError> {
     match args.command {
-        IssuesCommand::List { limit } => list(client, limit).await,
-        IssuesCommand::Read { issue_id } => read(client, &issue_id).await,
+        IssuesCommand::List { limit } => list(client, limit, fields_filter).await,
+        IssuesCommand::Read { issue_id } => read(client, &issue_id, fields_filter).await,
         IssuesCommand::Search {
             query,
             team,
@@ -23,7 +30,19 @@ pub async fn execute(client: &GraphqlClient, args: IssuesArgs) -> Result<(), Cli
             project,
             status,
             limit,
-        } => search(client, &query, team, assignee, project, status, limit).await,
+        } => {
+            search(
+                client,
+                &query,
+                team,
+                assignee,
+                project,
+                status,
+                limit,
+                fields_filter,
+            )
+            .await
+        }
         IssuesCommand::Delete { issue_id } => delete(client, &issue_id).await,
         IssuesCommand::Create {
             title,
@@ -125,11 +144,25 @@ fn add_embeds(issue: &mut Issue) {
     }
 }
 
-async fn list(client: &GraphqlClient, limit: u32) -> Result<(), CliError> {
+async fn list(
+    client: &GraphqlClient,
+    limit: u32,
+    fields_filter: Option<&str>,
+) -> Result<(), CliError> {
     let query = queries::issues_list_query();
-    let response: IssuesResponse = client
-        .request(&query, serde_json::json!({ "first": limit }))
+    let raw_response: serde_json::Value = client
+        .request_raw(&query, serde_json::json!({ "first": limit }))
         .await?;
+
+    let issues_value = if let Some(filter_str) = fields_filter {
+        let fields = fields::parse_fields(filter_str);
+        filter_json_nodes(&raw_response["issues"], &fields, ISSUE_MANDATORY_FIELDS)
+    } else {
+        raw_response["issues"].clone()
+    };
+
+    let response: IssuesResponse =
+        serde_json::from_value(serde_json::json!({ "issues": issues_value }))?;
 
     let mut issues = response.issues.nodes;
     for issue in &mut issues {
@@ -140,17 +173,21 @@ async fn list(client: &GraphqlClient, limit: u32) -> Result<(), CliError> {
     Ok(())
 }
 
-async fn read(client: &GraphqlClient, issue_id: &str) -> Result<(), CliError> {
-    let mut issue = if is_uuid(issue_id) {
+async fn read(
+    client: &GraphqlClient,
+    issue_id: &str,
+    fields_filter: Option<&str>,
+) -> Result<(), CliError> {
+    let (raw_response, is_uuid_path) = if is_uuid(issue_id) {
         let query = queries::issue_read_by_id_query();
-        let response: SingleIssueResponse = client
-            .request(&query, serde_json::json!({ "id": issue_id }))
+        let resp: serde_json::Value = client
+            .request_raw(&query, serde_json::json!({ "id": issue_id }))
             .await?;
-        response.issue
+        (resp, true)
     } else if let Some((team_key, number)) = parse_issue_identifier(issue_id) {
         let query = queries::issue_read_by_identifier_query();
-        let response: IssuesResponse = client
-            .request(
+        let resp: serde_json::Value = client
+            .request_raw(
                 &query,
                 serde_json::json!({
                     "teamKey": team_key,
@@ -158,12 +195,7 @@ async fn read(client: &GraphqlClient, issue_id: &str) -> Result<(), CliError> {
                 }),
             )
             .await?;
-        response.issues.nodes.into_iter().next().ok_or_else(|| {
-            CliError::NotFound {
-                entity: "Issue".to_string(),
-                identifier: issue_id.to_string(),
-            }
-        })?
+        (resp, false)
     } else {
         return Err(CliError::InvalidParameter {
             param: "issue_id".to_string(),
@@ -171,11 +203,45 @@ async fn read(client: &GraphqlClient, issue_id: &str) -> Result<(), CliError> {
         });
     };
 
+    let issue_value = if is_uuid_path {
+        if let Some(filter_str) = fields_filter {
+            let fields = fields::parse_fields(filter_str);
+            filter_json_nodes(&raw_response["issue"], &fields, ISSUE_MANDATORY_FIELDS)
+        } else {
+            raw_response["issue"].clone()
+        }
+    } else {
+        if let Some(filter_str) = fields_filter {
+            let fields = fields::parse_fields(filter_str);
+            filter_json_nodes(&raw_response["issues"], &fields, ISSUE_MANDATORY_FIELDS)
+        } else {
+            raw_response["issues"].clone()
+        }
+    };
+
+    let mut issue = if is_uuid_path {
+        let response: SingleIssueResponse =
+            serde_json::from_value(serde_json::json!({ "issue": issue_value }))?;
+        response.issue
+    } else {
+        let response: IssuesResponse =
+            serde_json::from_value(serde_json::json!({ "issues": issue_value }))?;
+        response
+            .issues
+            .nodes
+            .into_iter()
+            .next()
+            .ok_or_else(|| CliError::NotFound {
+                entity: "Issue".to_string(),
+                identifier: issue_id.to_string(),
+            })?
+    };
     add_embeds(&mut issue);
     output::print_json(&issue);
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn search(
     client: &GraphqlClient,
     query: &str,
@@ -184,6 +250,7 @@ async fn search(
     project: Option<String>,
     status: Option<String>,
     limit: u32,
+    fields_filter: Option<&str>,
 ) -> Result<(), CliError> {
     let mut filter = serde_json::Map::new();
 
@@ -225,7 +292,21 @@ async fn search(
     });
 
     let gql_query = queries::issues_search_query();
-    let response: IssueSearchResponse = client.request(&gql_query, variables).await?;
+    let raw_response: serde_json::Value = client.request_raw(&gql_query, variables).await?;
+
+    let issues_value = if let Some(filter_str) = fields_filter {
+        let fields = fields::parse_fields(filter_str);
+        filter_json_nodes(
+            &raw_response["searchIssues"],
+            &fields,
+            ISSUE_MANDATORY_FIELDS,
+        )
+    } else {
+        raw_response["searchIssues"].clone()
+    };
+
+    let response: IssueSearchResponse =
+        serde_json::from_value(serde_json::json!({ "searchIssues": issues_value }))?;
 
     let mut issues = response.search_issues.nodes;
     for issue in &mut issues {
@@ -302,10 +383,7 @@ async fn create(
     }
 
     let response: IssueCreateResponse = client
-        .request(
-            queries::ISSUE_CREATE,
-            serde_json::json!({ "input": input }),
-        )
+        .request(queries::ISSUE_CREATE, serde_json::json!({ "input": input }))
         .await?;
 
     if response.issue_create.success {
@@ -379,7 +457,10 @@ async fn update(
             .as_ref()
             .and_then(|i| i.team.as_ref())
             .ok_or_else(|| CliError::Other("Issue has no team".to_string()))?;
-        let team_id = team.id.as_deref().ok_or_else(|| CliError::Other("Issue team has no id".to_string()))?;
+        let team_id = team
+            .id
+            .as_deref()
+            .ok_or_else(|| CliError::Other("Issue team has no id".to_string()))?;
         let state_id = resolve_status_id(client, team_id, status_val).await?;
         input.insert("stateId".to_string(), serde_json::json!(state_id));
     }
@@ -451,10 +532,7 @@ async fn update(
         );
     }
     if clear_project_milestone {
-        input.insert(
-            "projectMilestoneId".to_string(),
-            serde_json::Value::Null,
-        );
+        input.insert("projectMilestoneId".to_string(), serde_json::Value::Null);
     }
 
     // Cycle
@@ -530,7 +608,7 @@ async fn resolve_label_ids(
             tl.issue_labels
                 .nodes
                 .iter()
-                .find(|l| l.name.eq_ignore_ascii_case(name))
+                .find(|l| l.name.as_deref().is_some_and(|n| n.eq_ignore_ascii_case(name)))
         });
 
         if let Some(label) = found_in_team {
@@ -547,9 +625,13 @@ async fn resolve_label_ids(
             );
         }
 
-        let found_in_ws = ws_labels.as_ref().unwrap().issue_labels.nodes.iter().find(|l| {
-            l.name.eq_ignore_ascii_case(name)
-        });
+        let found_in_ws = ws_labels
+            .as_ref()
+            .unwrap()
+            .issue_labels
+            .nodes
+            .iter()
+            .find(|l| l.name.as_deref().is_some_and(|n| n.eq_ignore_ascii_case(name)));
 
         match found_in_ws {
             Some(label) => ids.push(label.id.clone()),
@@ -585,7 +667,7 @@ async fn resolve_status_id(
         .workflow_states
         .nodes
         .iter()
-        .find(|s| s.name.eq_ignore_ascii_case(status))
+        .find(|s| s.name.as_deref().is_some_and(|n| n.eq_ignore_ascii_case(status)))
         .map(|s| s.id.clone())
         .ok_or_else(|| CliError::NotFound {
             entity: "Status".to_string(),

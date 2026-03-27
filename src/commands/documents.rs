@@ -7,11 +7,18 @@ use crate::models::{
     DocumentDeleteResponse, DocumentUpdateResponse, DocumentsResponse, SingleDocumentResponse,
 };
 use crate::utils::error::CliError;
+use crate::utils::fields::{self, filter_json_nodes};
 use crate::utils::identifiers::extract_document_id;
 use crate::utils::output;
 use crate::utils::stdin;
 
-pub async fn execute(client: &GraphqlClient, args: DocumentsArgs) -> Result<(), CliError> {
+const DOCUMENT_MANDATORY_FIELDS: &[&str] = &["id"];
+
+pub async fn execute(
+    client: &GraphqlClient,
+    args: DocumentsArgs,
+    fields_filter: Option<&str>,
+) -> Result<(), CliError> {
     match args.command {
         DocumentsCommand::Create {
             title,
@@ -23,7 +30,10 @@ pub async fn execute(client: &GraphqlClient, args: DocumentsArgs) -> Result<(), 
             attach_to,
         } => {
             let content = stdin::resolve_optional(content)?;
-            create(client, &title, content, project, team, icon, color, attach_to).await
+            create(
+                client, &title, content, project, team, icon, color, attach_to,
+            )
+            .await
         }
         DocumentsCommand::Update {
             document_id,
@@ -36,12 +46,12 @@ pub async fn execute(client: &GraphqlClient, args: DocumentsArgs) -> Result<(), 
             let content = stdin::resolve_optional(content)?;
             update(client, &document_id, title, content, project, icon, color).await
         }
-        DocumentsCommand::Read { document_id } => read(client, &document_id).await,
+        DocumentsCommand::Read { document_id } => read(client, &document_id, fields_filter).await,
         DocumentsCommand::List {
             project,
             issue,
             limit,
-        } => list(client, project, issue, limit).await,
+        } => list(client, project, issue, limit, fields_filter).await,
         DocumentsCommand::Delete { document_id } => delete(client, &document_id).await,
     }
 }
@@ -94,10 +104,7 @@ async fn create(
     if let Some(ref issue_val) = attach_to {
         if let Some(doc) = doc {
             let issue_id = resolve_issue_id(client, issue_val).await?;
-            let doc_url = format!(
-                "https://linear.app/document/{}",
-                &doc.id
-            );
+            let doc_url = format!("https://linear.app/document/{}", &doc.id);
             let attach_input = serde_json::json!({
                 "issueId": issue_id,
                 "title": doc.title,
@@ -161,16 +168,33 @@ async fn update(
     Ok(())
 }
 
-async fn read(client: &GraphqlClient, document_id: &str) -> Result<(), CliError> {
+async fn read(
+    client: &GraphqlClient,
+    document_id: &str,
+    fields_filter: Option<&str>,
+) -> Result<(), CliError> {
     let resolved_id = extract_document_id(document_id);
 
-    let response: SingleDocumentResponse = client
-        .request(
+    let raw_response: serde_json::Value = client
+        .request_raw(
             queries::DOCUMENT_READ,
             serde_json::json!({ "id": resolved_id }),
         )
         .await?;
 
+    let doc_value = if let Some(filter_str) = fields_filter {
+        let parsed_fields = fields::parse_fields(filter_str);
+        filter_json_nodes(
+            &raw_response["document"],
+            &parsed_fields,
+            DOCUMENT_MANDATORY_FIELDS,
+        )
+    } else {
+        raw_response["document"].clone()
+    };
+
+    let response: SingleDocumentResponse =
+        serde_json::from_value(serde_json::json!({ "document": doc_value }))?;
     output::print_json(&response.document);
     Ok(())
 }
@@ -180,9 +204,9 @@ async fn list(
     project: Option<String>,
     issue: Option<String>,
     limit: u32,
+    fields_filter: Option<&str>,
 ) -> Result<(), CliError> {
     if let Some(ref issue_val) = issue {
-        // Special handling: get documents attached to an issue
         return list_by_issue(client, issue_val).await;
     }
 
@@ -201,7 +225,23 @@ async fn list(
         "filter": if filter.is_empty() { serde_json::Value::Null } else { serde_json::Value::Object(filter) }
     });
 
-    let response: DocumentsResponse = client.request(queries::DOCUMENTS_LIST, variables).await?;
+    let raw_response: serde_json::Value = client
+        .request_raw(queries::DOCUMENTS_LIST, variables)
+        .await?;
+
+    let docs_value = if let Some(filter_str) = fields_filter {
+        let parsed_fields = fields::parse_fields(filter_str);
+        filter_json_nodes(
+            &raw_response["documents"],
+            &parsed_fields,
+            DOCUMENT_MANDATORY_FIELDS,
+        )
+    } else {
+        raw_response["documents"].clone()
+    };
+
+    let response: DocumentsResponse =
+        serde_json::from_value(serde_json::json!({ "documents": docs_value }))?;
     output::print_json(&response.documents.nodes);
     Ok(())
 }

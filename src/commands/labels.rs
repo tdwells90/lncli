@@ -5,12 +5,19 @@ use crate::models::{
     LabelCreateResponse, LabelDeleteResponse, LabelOutput, LabelUpdateResponse, LabelsResponse,
 };
 use crate::utils::error::CliError;
+use crate::utils::fields::{self, filter_json_nodes};
 use crate::utils::identifiers::is_uuid;
 use crate::utils::output;
 
-pub async fn execute(client: &GraphqlClient, args: LabelsArgs) -> Result<(), CliError> {
+const LABEL_MANDATORY_FIELDS: &[&str] = &["id"];
+
+pub async fn execute(
+    client: &GraphqlClient,
+    args: LabelsArgs,
+    fields_filter: Option<&str>,
+) -> Result<(), CliError> {
     match args.command {
-        LabelsCommand::List { team } => list(client, team).await,
+        LabelsCommand::List { team } => list(client, team, fields_filter).await,
         LabelsCommand::Create {
             name,
             color,
@@ -26,22 +33,39 @@ pub async fn execute(client: &GraphqlClient, args: LabelsArgs) -> Result<(), Cli
     }
 }
 
-async fn list(client: &GraphqlClient, team: Option<String>) -> Result<(), CliError> {
-    let response: LabelsResponse = if let Some(ref team_filter) = team {
+async fn list(
+    client: &GraphqlClient,
+    team: Option<String>,
+    fields_filter: Option<&str>,
+) -> Result<(), CliError> {
+    let raw_response: serde_json::Value = if let Some(ref team_filter) = team {
         let team_id = crate::commands::resolve_team_id(client, team_filter).await?;
         client
-            .request(
+            .request_raw(
                 queries::LABELS_LIST_BY_TEAM,
                 serde_json::json!({ "teamId": team_id }),
             )
             .await?
     } else {
         client
-            .request(queries::LABELS_LIST, serde_json::json!({}))
+            .request_raw(queries::LABELS_LIST, serde_json::json!({}))
             .await?
     };
 
-    // Filter out group containers, transform to output format
+    let labels_value = if let Some(filter_str) = fields_filter {
+        let parsed_fields = fields::parse_fields(filter_str);
+        filter_json_nodes(
+            &raw_response["issueLabels"],
+            &parsed_fields,
+            LABEL_MANDATORY_FIELDS,
+        )
+    } else {
+        raw_response["issueLabels"].clone()
+    };
+
+    let response: LabelsResponse =
+        serde_json::from_value(serde_json::json!({ "issueLabels": labels_value }))?;
+
     let labels: Vec<LabelOutput> = response
         .issue_labels
         .nodes
@@ -53,12 +77,12 @@ async fn list(client: &GraphqlClient, team: Option<String>) -> Result<(), CliErr
             } else {
                 "workspace".to_string()
             };
-            let group = l.parent.map(|p| p.name);
+            let group = l.parent.and_then(|p| p.name);
             LabelOutput {
                 id: l.id,
                 name: l.name,
                 color: l.color,
-                scope,
+                scope: Some(scope),
                 team: l.team,
                 group,
             }
@@ -91,10 +115,7 @@ async fn create(
     }
 
     let response: LabelCreateResponse = client
-        .request(
-            queries::LABEL_CREATE,
-            serde_json::json!({ "input": input }),
-        )
+        .request(queries::LABEL_CREATE, serde_json::json!({ "input": input }))
         .await?;
 
     if response.issue_label_create.success {
@@ -137,10 +158,7 @@ async fn update(
 
 async fn delete(client: &GraphqlClient, label_id: &str) -> Result<(), CliError> {
     let response: LabelDeleteResponse = client
-        .request(
-            queries::LABEL_DELETE,
-            serde_json::json!({ "id": label_id }),
-        )
+        .request(queries::LABEL_DELETE, serde_json::json!({ "id": label_id }))
         .await?;
 
     if response.issue_label_delete.success {
@@ -152,10 +170,7 @@ async fn delete(client: &GraphqlClient, label_id: &str) -> Result<(), CliError> 
 }
 
 /// Resolve a label name or UUID to an ID (for parent label lookup).
-async fn resolve_label_id(
-    client: &GraphqlClient,
-    label: &str,
-) -> Result<String, CliError> {
+async fn resolve_label_id(client: &GraphqlClient, label: &str) -> Result<String, CliError> {
     if is_uuid(label) {
         return Ok(label.to_string());
     }
@@ -168,7 +183,7 @@ async fn resolve_label_id(
         .issue_labels
         .nodes
         .iter()
-        .find(|l| l.name.eq_ignore_ascii_case(label))
+        .find(|l| l.name.as_deref().is_some_and(|n| n.eq_ignore_ascii_case(label)))
         .map(|l| l.id.clone())
         .ok_or_else(|| CliError::NotFound {
             entity: "Label".to_string(),

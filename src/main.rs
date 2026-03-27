@@ -36,20 +36,25 @@ async fn run(cli: Cli) -> Result<(), utils::error::CliError> {
         _ => {
             let token = auth::get_api_token(cli.api_token.as_deref())?;
             let client = graphql::client::GraphqlClient::new(&token);
+            let fields = cli.fields.as_deref();
 
             match command {
                 Commands::Usage => unreachable!(),
-                Commands::Teams(args) => commands::teams::execute(&client, args).await,
-                Commands::Users(args) => commands::users::execute(&client, args).await,
-                Commands::Labels(args) => commands::labels::execute(&client, args).await,
-                Commands::Projects(args) => commands::projects::execute(&client, args).await,
-                Commands::Issues(args) => commands::issues::execute(&client, args).await,
-                Commands::Comments(args) => commands::comments::execute(&client, args).await,
-                Commands::Cycles(args) => commands::cycles::execute(&client, args).await,
-                Commands::ProjectMilestones(args) => {
-                    commands::project_milestones::execute(&client, args).await
+                Commands::Teams(args) => commands::teams::execute(&client, args, fields).await,
+                Commands::Users(args) => commands::users::execute(&client, args, fields).await,
+                Commands::Labels(args) => commands::labels::execute(&client, args, fields).await,
+                Commands::Projects(args) => {
+                    commands::projects::execute(&client, args, fields).await
                 }
-                Commands::Documents(args) => commands::documents::execute(&client, args).await,
+                Commands::Issues(args) => commands::issues::execute(&client, args, fields).await,
+                Commands::Comments(args) => commands::comments::execute(&client, args).await,
+                Commands::Cycles(args) => commands::cycles::execute(&client, args, fields).await,
+                Commands::ProjectMilestones(args) => {
+                    commands::project_milestones::execute(&client, args, fields).await
+                }
+                Commands::Documents(args) => {
+                    commands::documents::execute(&client, args, fields).await
+                }
                 Commands::Embeds(args) => commands::embeds::execute(&client, args).await,
             }
         }

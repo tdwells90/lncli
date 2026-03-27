@@ -39,10 +39,9 @@ pub enum CliError {
 impl fmt::Display for CliError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::NotFound {
-                entity,
-                identifier,
-            } => write!(f, "{entity} \"{identifier}\" not found"),
+            Self::NotFound { entity, identifier } => {
+                write!(f, "{entity} \"{identifier}\" not found")
+            }
             Self::MultipleMatches {
                 entity,
                 identifier,
@@ -59,7 +58,10 @@ impl fmt::Display for CliError {
                 write!(f, "Flag \"{flag}\" requires \"{required}\"")
             }
             Self::MutuallyExclusive { flag_a, flag_b } => {
-                write!(f, "Flags \"{flag_a}\" and \"{flag_b}\" are mutually exclusive")
+                write!(
+                    f,
+                    "Flags \"{flag_a}\" and \"{flag_b}\" are mutually exclusive"
+                )
             }
             Self::GraphqlError(msg) => write!(f, "{msg}"),
             Self::HttpError(err) => write!(f, "HTTP error: {err}"),

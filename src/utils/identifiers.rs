@@ -9,9 +9,8 @@ static UUID_RE: LazyLock<Regex> = LazyLock::new(|| {
 static IDENTIFIER_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^([A-Za-z]+)-(\d+)$").unwrap());
 
-static DOCUMENT_URL_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"https://linear\.app/[^/]+/document/[^/]+-([a-f0-9]+)$").unwrap()
-});
+static DOCUMENT_URL_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"https://linear\.app/[^/]+/document/[^/]+-([a-f0-9]+)$").unwrap());
 
 pub fn is_uuid(value: &str) -> bool {
     UUID_RE.is_match(value)

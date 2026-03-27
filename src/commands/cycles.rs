@@ -2,19 +2,28 @@ use crate::cli::{CyclesArgs, CyclesCommand};
 use crate::commands::resolve_team_id;
 use crate::graphql::client::GraphqlClient;
 use crate::graphql::queries;
-use crate::models::{CycleCreateResponse, CycleUpdateResponse, CyclesResponse, SingleCycleResponse};
+use crate::models::{
+    CycleCreateResponse, CycleUpdateResponse, CyclesResponse, SingleCycleResponse,
+};
 use crate::utils::error::CliError;
+use crate::utils::fields::{self, filter_json_nodes};
 use crate::utils::identifiers::is_uuid;
 use crate::utils::output;
 use crate::utils::stdin;
 
-pub async fn execute(client: &GraphqlClient, args: CyclesArgs) -> Result<(), CliError> {
+const CYCLE_MANDATORY_FIELDS: &[&str] = &["id"];
+
+pub async fn execute(
+    client: &GraphqlClient,
+    args: CyclesArgs,
+    fields_filter: Option<&str>,
+) -> Result<(), CliError> {
     match args.command {
         CyclesCommand::List {
             team,
             active,
             around_active,
-        } => list(client, team, active, around_active).await,
+        } => list(client, team, active, around_active, fields_filter).await,
         CyclesCommand::Create {
             team,
             name,
@@ -49,7 +58,7 @@ pub async fn execute(client: &GraphqlClient, args: CyclesArgs) -> Result<(), Cli
             cycle_id_or_name,
             team,
             issues_first,
-        } => read(client, &cycle_id_or_name, team, issues_first).await,
+        } => read(client, &cycle_id_or_name, team, issues_first, fields_filter).await,
     }
 }
 
@@ -58,6 +67,7 @@ async fn list(
     team: Option<String>,
     active: bool,
     around_active: Option<u32>,
+    fields_filter: Option<&str>,
 ) -> Result<(), CliError> {
     let mut filter = serde_json::Map::new();
 
@@ -70,10 +80,7 @@ async fn list(
     }
 
     if active {
-        filter.insert(
-            "isActive".to_string(),
-            serde_json::json!({ "eq": true }),
-        );
+        filter.insert("isActive".to_string(), serde_json::json!({ "eq": true }));
     }
 
     let variables = serde_json::json!({
@@ -81,7 +88,22 @@ async fn list(
         "filter": if filter.is_empty() { serde_json::Value::Null } else { serde_json::Value::Object(filter) }
     });
 
-    let response: CyclesResponse = client.request(queries::CYCLES_LIST, variables).await?;
+    let raw_response: serde_json::Value =
+        client.request_raw(queries::CYCLES_LIST, variables).await?;
+
+    let cycles_value = if let Some(filter_str) = fields_filter {
+        let parsed_fields = fields::parse_fields(filter_str);
+        filter_json_nodes(
+            &raw_response["cycles"],
+            &parsed_fields,
+            CYCLE_MANDATORY_FIELDS,
+        )
+    } else {
+        raw_response["cycles"].clone()
+    };
+
+    let response: CyclesResponse =
+        serde_json::from_value(serde_json::json!({ "cycles": cycles_value }))?;
     let mut cycles = response.cycles.nodes;
 
     // Handle --around-active: find the active cycle and return +/- n around it
@@ -137,10 +159,7 @@ async fn create(
     }
 
     let response: CycleCreateResponse = client
-        .request(
-            queries::CYCLE_CREATE,
-            serde_json::json!({ "input": input }),
-        )
+        .request(queries::CYCLE_CREATE, serde_json::json!({ "input": input }))
         .await?;
 
     if response.cycle_create.success {
@@ -206,11 +225,11 @@ async fn read(
     cycle_id_or_name: &str,
     team: Option<String>,
     issues_first: u32,
+    fields_filter: Option<&str>,
 ) -> Result<(), CliError> {
     let cycle_id = if is_uuid(cycle_id_or_name) {
         cycle_id_or_name.to_string()
     } else {
-        // Need team to resolve by name
         let team_val = team.as_deref().ok_or_else(|| CliError::RequiresParameter {
             flag: "cycle name".to_string(),
             required: "--team".to_string(),
@@ -220,8 +239,8 @@ async fn read(
     };
 
     let query = queries::cycle_read_query();
-    let response: SingleCycleResponse = client
-        .request(
+    let raw_response: serde_json::Value = client
+        .request_raw(
             &query,
             serde_json::json!({
                 "id": cycle_id,
@@ -230,6 +249,19 @@ async fn read(
         )
         .await?;
 
+    let cycle_value = if let Some(filter_str) = fields_filter {
+        let parsed_fields = fields::parse_fields(filter_str);
+        filter_json_nodes(
+            &raw_response["cycle"],
+            &parsed_fields,
+            CYCLE_MANDATORY_FIELDS,
+        )
+    } else {
+        raw_response["cycle"].clone()
+    };
+
+    let response: SingleCycleResponse =
+        serde_json::from_value(serde_json::json!({ "cycle": cycle_value }))?;
     output::print_json(&response.cycle);
     Ok(())
 }

@@ -7,15 +7,22 @@ use crate::models::{
     SingleProjectResponse,
 };
 use crate::utils::error::CliError;
+use crate::utils::fields::{self, filter_json_nodes};
 use crate::utils::output;
 use crate::utils::stdin;
 
-pub async fn execute(client: &GraphqlClient, args: ProjectsArgs) -> Result<(), CliError> {
+const PROJECT_MANDATORY_FIELDS: &[&str] = &["id"];
+
+pub async fn execute(
+    client: &GraphqlClient,
+    args: ProjectsArgs,
+    fields_filter: Option<&str>,
+) -> Result<(), CliError> {
     match args.command {
-        ProjectsCommand::List { limit } => list(client, limit).await,
-        ProjectsCommand::Read {
-            project_id_or_name,
-        } => read(client, &project_id_or_name).await,
+        ProjectsCommand::List { limit } => list(client, limit, fields_filter).await,
+        ProjectsCommand::Read { project_id_or_name } => {
+            read(client, &project_id_or_name, fields_filter).await
+        }
         ProjectsCommand::Create {
             name,
             teams,
@@ -84,31 +91,58 @@ pub async fn execute(client: &GraphqlClient, args: ProjectsArgs) -> Result<(), C
             )
             .await
         }
-        ProjectsCommand::Delete {
-            project_id_or_name,
-        } => delete(client, &project_id_or_name).await,
+        ProjectsCommand::Delete { project_id_or_name } => delete(client, &project_id_or_name).await,
     }
 }
 
-async fn list(client: &GraphqlClient, limit: Option<u32>) -> Result<(), CliError> {
+async fn list(
+    client: &GraphqlClient,
+    limit: Option<u32>,
+    fields_filter: Option<&str>,
+) -> Result<(), CliError> {
     let vars = if let Some(l) = limit {
         serde_json::json!({ "first": l })
     } else {
         serde_json::json!({})
     };
-    let response: ProjectsResponse = client.request(queries::PROJECTS_LIST, vars).await?;
+
+    let raw_response: serde_json::Value = client.request_raw(queries::PROJECTS_LIST, vars).await?;
+
+    let projects_value = if let Some(filter_str) = fields_filter {
+        let fields = fields::parse_fields(filter_str);
+        filter_json_nodes(&raw_response["projects"], &fields, PROJECT_MANDATORY_FIELDS)
+    } else {
+        raw_response["projects"].clone()
+    };
+
+    let response: ProjectsResponse =
+        serde_json::from_value(serde_json::json!({ "projects": projects_value }))?;
     output::print_json(&response.projects.nodes);
     Ok(())
 }
 
-async fn read(client: &GraphqlClient, project_id_or_name: &str) -> Result<(), CliError> {
+async fn read(
+    client: &GraphqlClient,
+    project_id_or_name: &str,
+    fields_filter: Option<&str>,
+) -> Result<(), CliError> {
     let project_id = resolve_project_id(client, project_id_or_name).await?;
-    let response: SingleProjectResponse = client
-        .request(
+    let raw_response: serde_json::Value = client
+        .request_raw(
             queries::PROJECT_READ,
             serde_json::json!({ "id": project_id }),
         )
         .await?;
+
+    let project_value = if let Some(filter_str) = fields_filter {
+        let fields = fields::parse_fields(filter_str);
+        filter_json_nodes(&raw_response["project"], &fields, PROJECT_MANDATORY_FIELDS)
+    } else {
+        raw_response["project"].clone()
+    };
+
+    let response: SingleProjectResponse =
+        serde_json::from_value(serde_json::json!({ "project": project_value }))?;
     output::print_json(&response.project);
     Ok(())
 }
@@ -259,7 +293,10 @@ async fn delete(client: &GraphqlClient, project_id_or_name: &str) -> Result<(), 
 }
 
 /// Resolve comma-separated team keys/names/IDs to a Vec of team UUIDs.
-async fn resolve_team_ids(client: &GraphqlClient, teams_csv: &str) -> Result<Vec<String>, CliError> {
+async fn resolve_team_ids(
+    client: &GraphqlClient,
+    teams_csv: &str,
+) -> Result<Vec<String>, CliError> {
     let mut ids = Vec::new();
     for team in teams_csv.split(',').map(|s| s.trim()) {
         let id = resolve_team_id(client, team).await?;
