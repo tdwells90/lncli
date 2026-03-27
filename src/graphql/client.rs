@@ -37,6 +37,12 @@ impl GraphqlClient {
         query: &str,
         variables: Value,
     ) -> Result<T, CliError> {
+        let data = self.request_raw(query, variables).await?;
+        serde_json::from_value(data)
+            .map_err(|e| CliError::GraphqlError(format!("Failed to deserialize data: {e}")))
+    }
+
+    pub async fn request_raw(&self, query: &str, variables: Value) -> Result<Value, CliError> {
         let mut headers = HeaderMap::new();
         headers.insert(
             AUTHORIZATION,
@@ -67,12 +73,9 @@ impl GraphqlClient {
             )));
         }
 
-        let response_json: Value =
-            serde_json::from_str(&response_text).map_err(|e| {
-                CliError::GraphqlError(format!("Failed to parse response: {e}"))
-            })?;
+        let response_json: Value = serde_json::from_str(&response_text)
+            .map_err(|e| CliError::GraphqlError(format!("Failed to parse response: {e}")))?;
 
-        // Check for GraphQL errors
         if let Some(errors) = response_json.get("errors") {
             if let Some(arr) = errors.as_array() {
                 if let Some(first) = arr.first() {
@@ -85,12 +88,9 @@ impl GraphqlClient {
             }
         }
 
-        let data = response_json
+        response_json
             .get("data")
-            .ok_or_else(|| CliError::GraphqlError("No data in response".to_string()))?
-            .clone();
-
-        serde_json::from_value(data)
-            .map_err(|e| CliError::GraphqlError(format!("Failed to deserialize data: {e}")))
+            .ok_or_else(|| CliError::GraphqlError("No data in response".to_string()))
+            .cloned()
     }
 }

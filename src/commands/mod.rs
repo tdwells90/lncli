@@ -56,10 +56,7 @@ pub async fn resolve_team_id(client: &GraphqlClient, team: &str) -> Result<Strin
 }
 
 /// Resolve a project name or ID to a project UUID.
-pub async fn resolve_project_id(
-    client: &GraphqlClient,
-    project: &str,
-) -> Result<String, CliError> {
+pub async fn resolve_project_id(client: &GraphqlClient, project: &str) -> Result<String, CliError> {
     if is_uuid(project) {
         return Ok(project.to_string());
     }
@@ -83,10 +80,7 @@ pub async fn resolve_project_id(
 }
 
 /// Resolve an issue identifier (UUID or ABC-123) to an issue UUID.
-pub async fn resolve_issue_id(
-    client: &GraphqlClient,
-    issue_id: &str,
-) -> Result<String, CliError> {
+pub async fn resolve_issue_id(client: &GraphqlClient, issue_id: &str) -> Result<String, CliError> {
     if is_uuid(issue_id) {
         return Ok(issue_id.to_string());
     }

@@ -6,7 +6,8 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct IdName {
     pub id: String,
-    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -14,7 +15,8 @@ pub struct IdName {
 pub struct UserRef {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
-    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub display_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -26,7 +28,8 @@ pub struct UserRef {
 pub struct TeamRef {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
-    pub key: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
 }
@@ -35,8 +38,9 @@ pub struct TeamRef {
 #[serde(rename_all = "camelCase")]
 pub struct IssueState {
     pub id: String,
-    pub name: String,
-    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     pub state_type: Option<String>,
 }
 
@@ -44,22 +48,27 @@ pub struct IssueState {
 #[serde(rename_all = "camelCase")]
 pub struct LabelRef {
     pub id: String,
-    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IssueRef {
     pub id: String,
-    pub identifier: String,
-    pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub identifier: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CycleRef {
     pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub number: Option<i32>,
 }
 
@@ -67,7 +76,8 @@ pub struct CycleRef {
 #[serde(rename_all = "camelCase")]
 pub struct MilestoneRef {
     pub id: String,
-    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -81,7 +91,8 @@ pub struct Nodes<T> {
 pub struct ProjectRef {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
-    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
 }
 
 // ── Team ─────────────────────────────────────────────────────────────────────
@@ -90,8 +101,11 @@ pub struct ProjectRef {
 #[serde(rename_all = "camelCase")]
 pub struct Team {
     pub id: String,
-    pub key: String,
-    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 }
 
@@ -107,10 +121,14 @@ pub struct TeamsResponse {
 #[serde(rename_all = "camelCase")]
 pub struct User {
     pub id: String,
-    pub name: String,
-    pub display_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
-    pub active: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub active: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -125,10 +143,15 @@ pub struct UsersResponse {
 #[serde(rename_all = "camelCase")]
 pub struct Label {
     pub id: String,
-    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub is_group: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub parent: Option<IdName>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub team: Option<TeamRef>,
 }
 
@@ -144,10 +167,15 @@ pub struct LabelsResponse {
 #[serde(rename_all = "camelCase")]
 pub struct LabelOutput {
     pub id: String,
-    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<String>,
-    pub scope: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scope: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub team: Option<TeamRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub group: Option<String>,
 }
 
@@ -157,7 +185,8 @@ pub struct LabelOutput {
 #[serde(rename_all = "camelCase")]
 pub struct Project {
     pub id: String,
-    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -222,21 +251,35 @@ pub struct ProjectDeleteResponse {
 pub struct Issue {
     pub id: String,
     pub identifier: String,
-    pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub branch_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub priority: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<IssueState>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub assignee: Option<UserRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub team: Option<TeamRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub project: Option<ProjectRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cycle: Option<CycleRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub project_milestone: Option<MilestoneRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub labels: Option<Nodes<LabelRef>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub parent: Option<IssueRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub children: Option<Nodes<IssueRef>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub comments: Option<Nodes<Comment>>,
-    #[serde(skip_deserializing)]
+    #[serde(skip_deserializing, skip_serializing_if = "Option::is_none")]
     pub embeds: Option<Vec<crate::utils::embed_parser::EmbedInfo>>,
 }
 
@@ -299,7 +342,9 @@ pub struct IssueDeleteResponse {
 #[serde(rename_all = "camelCase")]
 pub struct Comment {
     pub id: String,
-    pub body: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub body: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<UserRef>,
 }
 
@@ -361,12 +406,19 @@ pub struct LabelDeleteResponse {
 #[serde(rename_all = "camelCase")]
 pub struct Cycle {
     pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub number: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub starts_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub ends_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub progress: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub team: Option<TeamRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub issues: Option<Nodes<Issue>>,
 }
 
@@ -407,9 +459,13 @@ pub struct CycleMutationResult {
 #[serde(rename_all = "camelCase")]
 pub struct ProjectMilestone {
     pub id: String,
-    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub target_date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub issues: Option<Nodes<Issue>>,
 }
 
@@ -456,8 +512,11 @@ pub struct ProjectMilestoneDeleteResponse {
 #[serde(rename_all = "camelCase")]
 pub struct Document {
     pub id: String,
-    pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub project: Option<ProjectRef>,
 }
 
@@ -510,8 +569,11 @@ pub struct DeleteResult {
 #[serde(rename_all = "camelCase")]
 pub struct Attachment {
     pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<serde_json::Value>,
 }
 
@@ -569,8 +631,9 @@ pub struct UploadHeader {
 #[serde(rename_all = "camelCase")]
 pub struct WorkflowState {
     pub id: String,
-    pub name: String,
-    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     pub state_type: Option<String>,
 }
 

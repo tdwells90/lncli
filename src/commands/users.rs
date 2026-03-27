@@ -3,18 +3,39 @@ use crate::graphql::client::GraphqlClient;
 use crate::graphql::queries;
 use crate::models::UsersResponse;
 use crate::utils::error::CliError;
+use crate::utils::fields::{self, filter_json_nodes};
 use crate::utils::output;
 
-pub async fn execute(client: &GraphqlClient, args: UsersArgs) -> Result<(), CliError> {
+const USER_MANDATORY_FIELDS: &[&str] = &["id"];
+
+pub async fn execute(
+    client: &GraphqlClient,
+    args: UsersArgs,
+    fields_filter: Option<&str>,
+) -> Result<(), CliError> {
     match args.command {
-        UsersCommand::List => list(client).await,
+        UsersCommand::List => list(client, fields_filter).await,
     }
 }
 
-async fn list(client: &GraphqlClient) -> Result<(), CliError> {
-    let response: UsersResponse = client
-        .request(queries::USERS_LIST, serde_json::json!({}))
+async fn list(client: &GraphqlClient, fields_filter: Option<&str>) -> Result<(), CliError> {
+    let raw_response: serde_json::Value = client
+        .request_raw(queries::USERS_LIST, serde_json::json!({}))
         .await?;
+
+    let users_value = if let Some(filter_str) = fields_filter {
+        let parsed_fields = fields::parse_fields(filter_str);
+        filter_json_nodes(
+            &raw_response["users"],
+            &parsed_fields,
+            USER_MANDATORY_FIELDS,
+        )
+    } else {
+        raw_response["users"].clone()
+    };
+
+    let response: UsersResponse =
+        serde_json::from_value(serde_json::json!({ "users": users_value }))?;
     output::print_json(&response.users.nodes);
     Ok(())
 }

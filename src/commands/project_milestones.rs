@@ -3,27 +3,40 @@ use crate::commands::{resolve_milestone_id, resolve_project_id};
 use crate::graphql::client::GraphqlClient;
 use crate::graphql::queries;
 use crate::models::{
-    ProjectMilestoneCreateResponse, ProjectMilestoneDeleteResponse,
-    ProjectMilestoneUpdateResponse, ProjectMilestonesResponse, SingleProjectMilestoneResponse,
+    ProjectMilestoneCreateResponse, ProjectMilestoneDeleteResponse, ProjectMilestoneUpdateResponse,
+    ProjectMilestonesResponse, SingleProjectMilestoneResponse,
 };
 use crate::utils::error::CliError;
+use crate::utils::fields::{self, filter_json_nodes};
 use crate::utils::identifiers::is_uuid;
 use crate::utils::output;
 use crate::utils::stdin;
 
+const MILESTONE_MANDATORY_FIELDS: &[&str] = &["id"];
+
 pub async fn execute(
     client: &GraphqlClient,
     args: ProjectMilestonesArgs,
+    fields_filter: Option<&str>,
 ) -> Result<(), CliError> {
     match args.command {
         ProjectMilestonesCommand::List { project, limit } => {
-            list(client, &project, limit).await
+            list(client, &project, limit, fields_filter).await
         }
         ProjectMilestonesCommand::Read {
             milestone_id_or_name,
             project,
             issues_first,
-        } => read(client, &milestone_id_or_name, project, issues_first).await,
+        } => {
+            read(
+                client,
+                &milestone_id_or_name,
+                project,
+                issues_first,
+                fields_filter,
+            )
+            .await
+        }
         ProjectMilestonesCommand::Delete {
             milestone_id_or_name,
             project,
@@ -60,11 +73,16 @@ pub async fn execute(
     }
 }
 
-async fn list(client: &GraphqlClient, project: &str, limit: u32) -> Result<(), CliError> {
+async fn list(
+    client: &GraphqlClient,
+    project: &str,
+    limit: u32,
+    fields_filter: Option<&str>,
+) -> Result<(), CliError> {
     let project_id = resolve_project_id(client, project).await?;
 
-    let response: ProjectMilestonesResponse = client
-        .request(
+    let raw_response: serde_json::Value = client
+        .request_raw(
             queries::PROJECT_MILESTONES_LIST,
             serde_json::json!({
                 "projectId": project_id,
@@ -73,6 +91,19 @@ async fn list(client: &GraphqlClient, project: &str, limit: u32) -> Result<(), C
         )
         .await?;
 
+    let milestones_value = if let Some(filter_str) = fields_filter {
+        let parsed_fields = fields::parse_fields(filter_str);
+        filter_json_nodes(
+            &raw_response["projectMilestones"],
+            &parsed_fields,
+            MILESTONE_MANDATORY_FIELDS,
+        )
+    } else {
+        raw_response["projectMilestones"].clone()
+    };
+
+    let response: ProjectMilestonesResponse =
+        serde_json::from_value(serde_json::json!({ "projectMilestones": milestones_value }))?;
     output::print_json(&response.project_milestones.nodes);
     Ok(())
 }
@@ -82,21 +113,24 @@ async fn read(
     milestone_id_or_name: &str,
     project: Option<String>,
     issues_first: u32,
+    fields_filter: Option<&str>,
 ) -> Result<(), CliError> {
     let milestone_id = if is_uuid(milestone_id_or_name) {
         milestone_id_or_name.to_string()
     } else {
-        let project_val = project.as_deref().ok_or_else(|| CliError::RequiresParameter {
-            flag: "milestone name".to_string(),
-            required: "--project".to_string(),
-        })?;
+        let project_val = project
+            .as_deref()
+            .ok_or_else(|| CliError::RequiresParameter {
+                flag: "milestone name".to_string(),
+                required: "--project".to_string(),
+            })?;
         let project_id = resolve_project_id(client, project_val).await?;
         resolve_milestone_id(client, &project_id, milestone_id_or_name).await?
     };
 
     let query = queries::project_milestone_read_query();
-    let response: SingleProjectMilestoneResponse = client
-        .request(
+    let raw_response: serde_json::Value = client
+        .request_raw(
             &query,
             serde_json::json!({
                 "id": milestone_id,
@@ -105,6 +139,19 @@ async fn read(
         )
         .await?;
 
+    let milestone_value = if let Some(filter_str) = fields_filter {
+        let parsed_fields = fields::parse_fields(filter_str);
+        filter_json_nodes(
+            &raw_response["projectMilestone"],
+            &parsed_fields,
+            MILESTONE_MANDATORY_FIELDS,
+        )
+    } else {
+        raw_response["projectMilestone"].clone()
+    };
+
+    let response: SingleProjectMilestoneResponse =
+        serde_json::from_value(serde_json::json!({ "projectMilestone": milestone_value }))?;
     output::print_json(&response.project_milestone);
     Ok(())
 }
@@ -117,10 +164,12 @@ async fn delete(
     let milestone_id = if is_uuid(milestone_id_or_name) {
         milestone_id_or_name.to_string()
     } else {
-        let project_val = project.as_deref().ok_or_else(|| CliError::RequiresParameter {
-            flag: "milestone name".to_string(),
-            required: "--project".to_string(),
-        })?;
+        let project_val = project
+            .as_deref()
+            .ok_or_else(|| CliError::RequiresParameter {
+                flag: "milestone name".to_string(),
+                required: "--project".to_string(),
+            })?;
         let project_id = resolve_project_id(client, project_val).await?;
         resolve_milestone_id(client, &project_id, milestone_id_or_name).await?
     };
@@ -192,10 +241,12 @@ async fn update(
     let milestone_id = if is_uuid(milestone_id_or_name) {
         milestone_id_or_name.to_string()
     } else {
-        let project_val = project.as_deref().ok_or_else(|| CliError::RequiresParameter {
-            flag: "milestone name".to_string(),
-            required: "--project".to_string(),
-        })?;
+        let project_val = project
+            .as_deref()
+            .ok_or_else(|| CliError::RequiresParameter {
+                flag: "milestone name".to_string(),
+                required: "--project".to_string(),
+            })?;
         let project_id = resolve_project_id(client, project_val).await?;
         resolve_milestone_id(client, &project_id, milestone_id_or_name).await?
     };

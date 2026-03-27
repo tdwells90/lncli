@@ -2,7 +2,11 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 
 /// An opinionated CLI client for Linear.app.
 #[derive(Parser)]
-#[command(name = "lncli", version, about)]
+#[command(
+    name = "lncli",
+    version,
+    about = "An opinionated CLI client for Linear.app.\n\nUse --fields to restrict which fields are returned in output (e.g., --fields id,title,description).\nNested fields use dot notation (e.g., --fields user.name,assignee.email).\nMandatory fields like 'id' are always included."
+)]
 pub struct Cli {
     /// Linear API token (overrides env var and token file)
     #[arg(long = "api-token", global = true)]
@@ -11,6 +15,12 @@ pub struct Cli {
     /// Output format (toon or json)
     #[arg(long, global = true, value_enum, default_value = "toon")]
     pub format: OutputFormat,
+
+    /// Fields to include in output (comma-separated, e.g. --fields id,title,description)
+    /// Use dot notation for nested fields (e.g. --fields user.name,assignee.email)
+    /// Mandatory fields (id, identifier) are always included
+    #[arg(long, global = true)]
+    pub fields: Option<String>,
 
     #[command(subcommand)]
     pub command: Option<Commands>,
