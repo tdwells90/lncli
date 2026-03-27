@@ -31,7 +31,7 @@ Run `lncli` or `lncli usage` to see all available commands and usage details.
 
 Limit output to specific fields using `--fields`:
 
-```
+```bash
 lncli issues list --fields id,identifier,title,state
 [7]{id,identifier,title,state}:
   "abc123...",ENG-123,"Fix auth bug","In Progress"
@@ -39,7 +39,7 @@ lncli issues list --fields id,identifier,title,state
 
 Nested fields use dot notation:
 
-```
+```bash
 lncli issues list --fields id,title,assignee.email,team.name
 ```
 
