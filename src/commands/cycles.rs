@@ -31,7 +31,7 @@ pub async fn execute(
             ends_at,
             description,
         } => {
-            let description = stdin::resolve_optional(description)?;
+            let description = stdin::resolve_optional(description).await?;
             create(client, &team, name, &starts_at, &ends_at, description).await
         }
         CyclesCommand::Update {
@@ -42,7 +42,7 @@ pub async fn execute(
             ends_at,
             description,
         } => {
-            let description = stdin::resolve_optional(description)?;
+            let description = stdin::resolve_optional(description).await?;
             update(
                 client,
                 &cycle_id_or_name,

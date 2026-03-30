@@ -57,7 +57,7 @@ pub async fn execute(
             status,
             parent_ticket,
         } => {
-            let description = stdin::resolve_optional(description)?;
+            let description = stdin::resolve_optional(description).await?;
             create(
                 client,
                 &title,
@@ -92,7 +92,7 @@ pub async fn execute(
             cycle,
             clear_cycle,
         } => {
-            let description = stdin::resolve_optional(description)?;
+            let description = stdin::resolve_optional(description).await?;
             update(
                 client,
                 &issue_id,

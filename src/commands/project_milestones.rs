@@ -47,7 +47,7 @@ pub async fn execute(
             description,
             target_date,
         } => {
-            let description = stdin::resolve_optional(description)?;
+            let description = stdin::resolve_optional(description).await?;
             create(client, &name, &project, description, target_date).await
         }
         ProjectMilestonesCommand::Update {
@@ -58,7 +58,7 @@ pub async fn execute(
             target_date,
             sort_order,
         } => {
-            let description = stdin::resolve_optional(description)?;
+            let description = stdin::resolve_optional(description).await?;
             update(
                 client,
                 &milestone_id_or_name,

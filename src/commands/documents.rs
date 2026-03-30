@@ -29,7 +29,7 @@ pub async fn execute(
             color,
             attach_to,
         } => {
-            let content = stdin::resolve_optional(content)?;
+            let content = stdin::resolve_optional(content).await?;
             create(
                 client, &title, content, project, team, icon, color, attach_to,
             )
@@ -43,7 +43,7 @@ pub async fn execute(
             icon,
             color,
         } => {
-            let content = stdin::resolve_optional(content)?;
+            let content = stdin::resolve_optional(content).await?;
             update(client, &document_id, title, content, project, icon, color).await
         }
         DocumentsCommand::Read { document_id } => read(client, &document_id, fields_filter).await,

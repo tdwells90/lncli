@@ -39,8 +39,8 @@ pub async fn execute(
                 ("--description", description.as_deref()),
                 ("--content", content.as_deref()),
             ])?;
-            let description = stdin::resolve_optional(description)?;
-            let content = stdin::resolve_optional(content)?;
+            let description = stdin::resolve_optional(description).await?;
+            let content = stdin::resolve_optional(content).await?;
             create(
                 client,
                 &name,
@@ -73,8 +73,8 @@ pub async fn execute(
                 ("--description", description.as_deref()),
                 ("--content", content.as_deref()),
             ])?;
-            let description = stdin::resolve_optional(description)?;
-            let content = stdin::resolve_optional(content)?;
+            let description = stdin::resolve_optional(description).await?;
+            let content = stdin::resolve_optional(content).await?;
             update(
                 client,
                 &project_id_or_name,
