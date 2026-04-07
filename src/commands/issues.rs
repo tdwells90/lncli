@@ -195,14 +195,13 @@ async fn read(
     project: Option<String>,
     fields_filter: Option<&str>,
 ) -> Result<(), CliError> {
-    let project_filter = if let Some(ref project_val) = project {
-        let project_id = resolve_project_id(client, project_val).await?;
-        Some(serde_json::json!({ "project": { "id": { "eq": project_id } } }))
-    } else {
-        None
-    };
-
     let (raw_response, is_uuid_path) = if is_uuid(issue_id) {
+        if project.is_some() {
+            return Err(CliError::InvalidParameter {
+                param: "project".to_string(),
+                reason: "--project is not supported when reading by UUID".to_string(),
+            });
+        }
         let query = queries::issue_read_by_id_query();
         let resp: serde_json::Value = client
             .request_raw(&query, serde_json::json!({ "id": issue_id }))
@@ -214,21 +213,18 @@ async fn read(
             "team": { "key": { "eq": team_key } },
             "number": { "eq": number }
         });
-        if let Some(ref pf) = project_filter {
+        if let Some(ref project_val) = project {
+            let project_id = resolve_project_id(client, project_val).await?;
             filter
                 .as_object_mut()
-                .unwrap()
-                .extend(pf.as_object().unwrap().clone());
+                .expect("filter is a JSON object")
+                .insert(
+                    "project".to_string(),
+                    serde_json::json!({ "id": { "eq": project_id } }),
+                );
         }
         let resp: serde_json::Value = client
-            .request_raw(
-                &query,
-                serde_json::json!({
-                    "teamKey": team_key,
-                    "number": number,
-                    "filter": filter
-                }),
-            )
+            .request_raw(&query, serde_json::json!({ "filter": filter }))
             .await?;
         (resp, false)
     } else {

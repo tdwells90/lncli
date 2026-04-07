@@ -200,7 +200,7 @@ pub fn issue_read_by_id_query() -> String {
 
 pub fn issue_read_by_identifier_query() -> String {
     format!(
-        "query IssueByIdentifier($teamKey: String!, $number: Float!, $filter: IssueFilter) {{
+        "query IssueByIdentifier($filter: IssueFilter) {{
             issues(
                 filter: $filter,
                 first: 1
