@@ -21,8 +21,12 @@ pub async fn execute(
     fields_filter: Option<&str>,
 ) -> Result<(), CliError> {
     match args.command {
-        IssuesCommand::List { limit } => list(client, limit, fields_filter).await,
-        IssuesCommand::Read { issue_id } => read(client, &issue_id, fields_filter).await,
+        IssuesCommand::List { limit, project } => {
+            list(client, limit, project, fields_filter).await
+        }
+        IssuesCommand::Read { issue_id, project } => {
+            read(client, &issue_id, project, fields_filter).await
+        }
         IssuesCommand::Search {
             query,
             team,
@@ -147,11 +151,23 @@ fn add_embeds(issue: &mut Issue) {
 async fn list(
     client: &GraphqlClient,
     limit: u32,
+    project: Option<String>,
     fields_filter: Option<&str>,
 ) -> Result<(), CliError> {
     let query = queries::issues_list_query();
+
+    let filter = if let Some(ref project_val) = project {
+        let project_id = resolve_project_id(client, project_val).await?;
+        serde_json::json!({ "project": { "id": { "eq": project_id } } })
+    } else {
+        serde_json::Value::Null
+    };
+
     let raw_response: serde_json::Value = client
-        .request_raw(&query, serde_json::json!({ "first": limit }))
+        .request_raw(
+            &query,
+            serde_json::json!({ "first": limit, "filter": filter }),
+        )
         .await?;
 
     let issues_value = if let Some(filter_str) = fields_filter {
@@ -176,8 +192,16 @@ async fn list(
 async fn read(
     client: &GraphqlClient,
     issue_id: &str,
+    project: Option<String>,
     fields_filter: Option<&str>,
 ) -> Result<(), CliError> {
+    let project_filter = if let Some(ref project_val) = project {
+        let project_id = resolve_project_id(client, project_val).await?;
+        Some(serde_json::json!({ "project": { "id": { "eq": project_id } } }))
+    } else {
+        None
+    };
+
     let (raw_response, is_uuid_path) = if is_uuid(issue_id) {
         let query = queries::issue_read_by_id_query();
         let resp: serde_json::Value = client
@@ -186,12 +210,23 @@ async fn read(
         (resp, true)
     } else if let Some((team_key, number)) = parse_issue_identifier(issue_id) {
         let query = queries::issue_read_by_identifier_query();
+        let mut filter = serde_json::json!({
+            "team": { "key": { "eq": team_key } },
+            "number": { "eq": number }
+        });
+        if let Some(ref pf) = project_filter {
+            filter
+                .as_object_mut()
+                .unwrap()
+                .extend(pf.as_object().unwrap().clone());
+        }
         let resp: serde_json::Value = client
             .request_raw(
                 &query,
                 serde_json::json!({
                     "teamKey": team_key,
-                    "number": number
+                    "number": number,
+                    "filter": filter
                 }),
             )
             .await?;
