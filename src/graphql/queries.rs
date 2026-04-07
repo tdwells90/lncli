@@ -187,8 +187,8 @@ pub const PROJECT_DELETE: &str = "
 
 pub fn issues_list_query() -> String {
     format!(
-        "query IssuesList($first: Int!) {{
-            issues(first: $first, orderBy: updatedAt) {{
+        "query IssuesList($first: Int!, $filter: IssueFilter) {{
+            issues(first: $first, orderBy: updatedAt, filter: $filter) {{
                 nodes {{
                     {ISSUE_CORE_FIELDS}
                     {ISSUE_RELATIONS}
@@ -212,12 +212,9 @@ pub fn issue_read_by_id_query() -> String {
 
 pub fn issue_read_by_identifier_query() -> String {
     format!(
-        "query IssueByIdentifier($teamKey: String!, $number: Float!) {{
+        "query IssueByIdentifier($filter: IssueFilter) {{
             issues(
-                filter: {{
-                    team: {{ key: {{ eq: $teamKey }} }},
-                    number: {{ eq: $number }}
-                }},
+                filter: $filter,
                 first: 1
             ) {{
                 nodes {{

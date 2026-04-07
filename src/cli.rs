@@ -84,12 +84,20 @@ pub enum IssuesCommand {
         /// Maximum number of issues to return
         #[arg(short, long, default_value = "25")]
         limit: u32,
+
+        /// Filter by project name or ID
+        #[arg(long)]
+        project: Option<String>,
     },
 
     /// Read a single issue by ID or identifier (e.g. ABC-123)
     Read {
         /// Issue UUID or identifier like ABC-123
         issue_id: String,
+
+        /// Filter by project name or ID
+        #[arg(long)]
+        project: Option<String>,
     },
 
     /// Search issues with optional filters
