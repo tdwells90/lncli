@@ -62,6 +62,18 @@ pub const USERS_LIST: &str = "
     }
 ";
 
+pub const VIEWER: &str = "
+    query Viewer {
+        viewer {
+            id
+            name
+            displayName
+            email
+            active
+        }
+    }
+";
+
 // ── Labels ───────────────────────────────────────────────────────────────────
 
 pub const LABELS_LIST: &str = "

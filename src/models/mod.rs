@@ -137,6 +137,12 @@ pub struct UsersResponse {
     pub users: Nodes<User>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ViewerResponse {
+    pub viewer: User,
+}
+
 // ── Label ────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
