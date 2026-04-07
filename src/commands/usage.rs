@@ -46,7 +46,7 @@ pub fn execute() {
                 {"command": "teams list", "description": "List all teams."}
             ],
             "users": [
-                {"command": "users list", "description": "List all users."}
+                {"command": "users list", "flags": "[--me]", "description": "List all users. Use --me to get the currently authenticated user."}
             ],
             "projects": [
                 {"command": "projects list", "flags": "[-l, --limit <n>]", "description": "List non-archived projects."},

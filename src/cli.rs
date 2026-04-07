@@ -491,7 +491,11 @@ pub struct UsersArgs {
 #[derive(Subcommand)]
 pub enum UsersCommand {
     /// List all users
-    List,
+    List {
+        /// Get the currently authenticated user
+        #[arg(long)]
+        me: bool,
+    },
 }
 
 // ── Projects ─────────────────────────────────────────────────────────────────
