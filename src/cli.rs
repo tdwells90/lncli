@@ -129,6 +129,7 @@ pub enum IssuesCommand {
     /// Create a new issue
     Create {
         /// Issue title
+        #[arg(long)]
         title: String,
 
         /// Issue description in markdown (use - for stdin)
@@ -438,6 +439,7 @@ pub enum LabelsCommand {
     /// Create a new label
     Create {
         /// Label name
+        #[arg(long)]
         name: String,
 
         /// Label color (hex, e.g. #ff0000)
@@ -532,6 +534,7 @@ pub enum ProjectsCommand {
     /// Create a new project
     Create {
         /// Project name
+        #[arg(long)]
         name: String,
 
         /// Team keys, names, or IDs (comma-separated, required)
@@ -751,6 +754,7 @@ pub enum ProjectMilestonesCommand {
     /// Create a milestone
     Create {
         /// Milestone name
+        #[arg(long)]
         name: String,
 
         /// Project name or ID (required)

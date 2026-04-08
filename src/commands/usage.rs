@@ -16,7 +16,7 @@ pub fn execute() {
                 {"command": "issues list", "flags": "[-l, --limit <n=25>]", "description": "List issues with all relationships."},
                 {"command": "issues read <issueId>", "description": "Read a single issue. issueId: UUID or identifier (ABC-123)."},
                 {"command": "issues search <query>", "flags": "[--team <team>] [--assignee <id>] [--project <project>] [--status <statuses>] [-l, --limit <n=10>]", "description": "Search issues. --status accepts comma-separated values."},
-                {"command": "issues create <title>", "flags": "--team <team> [-d, --description <desc>] [-a, --assignee <id>] [-p, --priority <1-4>] [--project <project>] [--labels <labels>] [--project-milestone <milestone>] [--cycle <cycle>] [--status <status>] [--parent-ticket <id>]", "description": "Create an issue. --team is required. --labels accepts comma-separated names or IDs."},
+                {"command": "issues create", "flags": "--title <title> --team <team> [-d, --description <desc>] [-a, --assignee <id>] [-p, --priority <1-4>] [--project <project>] [--labels <labels>] [--project-milestone <milestone>] [--cycle <cycle>] [--status <status>] [--parent-ticket <id>]", "description": "Create an issue. --title and --team are required. --labels accepts comma-separated names or IDs."},
                 {"command": "issues update <issueId>", "flags": "[-t, --title <title>] [-d, --description <desc>] [-s, --status <status>] [-p, --priority <1-4>] [-a, --assignee <id>] [--project <project>] [--labels <labels>] [--label-by <adding|overwriting>] [--clear-labels] [--parent-ticket <id>] [--clear-parent-ticket] [--project-milestone <milestone>] [--clear-project-milestone] [--cycle <cycle>] [--clear-cycle]", "description": "Update an issue. Mutually exclusive: --labels/--clear-labels, --parent-ticket/--clear-parent-ticket, --project-milestone/--clear-project-milestone, --cycle/--clear-cycle."},
                 {"command": "issues delete <issueId>", "description": "Delete (trash) an issue."}
             ],
@@ -38,7 +38,7 @@ pub fn execute() {
             ],
             "labels": [
                 {"command": "labels list", "flags": "[--team <team>]", "description": "List labels, excluding group containers."},
-                {"command": "labels create <name>", "flags": "[--color <hex>] [--team <team>] [--parent <label>]", "description": "Create a label. --team scopes to a team. --parent sets the group."},
+                {"command": "labels create", "flags": "--name <name> [--color <hex>] [--team <team>] [--parent <label>]", "description": "Create a label. --name is required. --team scopes to a team. --parent sets the group."},
                 {"command": "labels update <labelId>", "flags": "[-n, --name <name>] [--color <hex>]", "description": "Update a label."},
                 {"command": "labels delete <labelId>", "description": "Delete a label."}
             ],
@@ -51,7 +51,7 @@ pub fn execute() {
             "projects": [
                 {"command": "projects list", "flags": "[-l, --limit <n>]", "description": "List non-archived projects."},
                 {"command": "projects read <projectIdOrName>", "description": "Read a single project by ID or name."},
-                {"command": "projects create <name>", "flags": "--teams <teams> [-d, --description <desc>] [--content <md>] [--lead <userId>] [-p, --priority <0-4>] [--start-date <YYYY-MM-DD>] [--target-date <YYYY-MM-DD>] [--icon <icon>] [--color <color>]", "description": "Create a project. --teams accepts comma-separated team keys, names, or IDs."},
+                {"command": "projects create", "flags": "--name <name> --teams <teams> [-d, --description <desc>] [--content <md>] [--lead <userId>] [-p, --priority <0-4>] [--start-date <YYYY-MM-DD>] [--target-date <YYYY-MM-DD>] [--icon <icon>] [--color <color>]", "description": "Create a project. --name and --teams are required."},
                 {"command": "projects update <projectIdOrName>", "flags": "[-n, --name <name>] [-d, --description <desc>] [--content <md>] [--lead <userId>] [-p, --priority <0-4>] [--start-date <YYYY-MM-DD>] [--target-date <YYYY-MM-DD>] [--icon <icon>] [--color <color>] [--teams <teams>]", "description": "Update a project."},
                 {"command": "projects delete <projectIdOrName>", "description": "Delete (trash) a project."}
             ],
@@ -64,7 +64,7 @@ pub fn execute() {
             "project-milestones": [
                 {"command": "project-milestones list", "flags": "--project <project> [-l, --limit <n=50>]", "description": "List milestones in a project."},
                 {"command": "project-milestones read <milestoneIdOrName>", "flags": "[--project <project>] [--issues-first <n=50>]", "description": "Read a milestone with its issues."},
-                {"command": "project-milestones create <name>", "flags": "--project <project> [-d, --description <desc>] [--target-date <YYYY-MM-DD>]", "description": "Create a milestone."},
+                {"command": "project-milestones create", "flags": "--name <name> --project <project> [-d, --description <desc>] [--target-date <YYYY-MM-DD>]", "description": "Create a milestone. --name and --project are required."},
                 {"command": "project-milestones update <milestoneIdOrName>", "flags": "[--project <project>] [-n, --name <name>] [-d, --description <desc>] [--target-date <YYYY-MM-DD>] [--sort-order <n>]", "description": "Update a milestone."},
                 {"command": "project-milestones delete <milestoneIdOrName>", "flags": "[--project <project>]", "description": "Delete a milestone."}
             ]

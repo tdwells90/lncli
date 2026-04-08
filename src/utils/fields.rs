@@ -29,27 +29,22 @@ fn filter_json_recursive(value: &Value, allowed_fields: &[String]) -> Value {
 
             for (key, nested_fields) in grouped {
                 if nested_fields.is_empty() {
-                    if let Some(v) = obj.get(key) {
-                        if !v.is_null() {
-                            filtered.insert(key.to_string(), v.clone());
-                        }
+                    if let Some(v) = obj.get(key)
+                        && !v.is_null()
+                    {
+                        filtered.insert(key.to_string(), v.clone());
                     }
                 } else if let Some(v) = obj.get(key) {
                     // Auto-include "id" in nested objects so deserialization
                     // doesn't fail when the struct requires it.
-                    let mut nested_with_id: Vec<String> = nested_fields
-                        .iter()
-                        .map(|s| (*s).to_string())
-                        .collect();
+                    let mut nested_with_id: Vec<String> =
+                        nested_fields.iter().map(|s| (*s).to_string()).collect();
                     if !nested_with_id.iter().any(|f| f == "id") {
                         nested_with_id.push("id".to_string());
                     }
-                    let nested_filtered = filter_json_recursive(
-                        v,
-                        &nested_with_id,
-                    );
+                    let nested_filtered = filter_json_recursive(v, &nested_with_id);
                     if !nested_filtered.is_null() && !nested_filtered.is_object()
-                        || !nested_filtered.as_object().map_or(false, |o| o.is_empty())
+                        || !nested_filtered.as_object().is_some_and(|o| o.is_empty())
                     {
                         filtered.insert(key.to_string(), nested_filtered);
                     }
@@ -85,16 +80,16 @@ pub fn filter_json_nodes(
         }
     }
 
-    if let Value::Object(obj) = value {
-        if let Some(Value::Array(arr)) = obj.get("nodes") {
-            let filtered_nodes: Vec<Value> = arr
-                .iter()
-                .map(|v| filter_json_recursive(v, &all_fields))
-                .collect();
-            let mut result = obj.clone();
-            result.insert("nodes".to_string(), Value::Array(filtered_nodes));
-            return Value::Object(result);
-        }
+    if let Value::Object(obj) = value
+        && let Some(Value::Array(arr)) = obj.get("nodes")
+    {
+        let filtered_nodes: Vec<Value> = arr
+            .iter()
+            .map(|v| filter_json_recursive(v, &all_fields))
+            .collect();
+        let mut result = obj.clone();
+        result.insert("nodes".to_string(), Value::Array(filtered_nodes));
+        return Value::Object(result);
     }
     filter_json_recursive(value, &all_fields)
 }

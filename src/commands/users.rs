@@ -26,7 +26,11 @@ async fn me(client: &GraphqlClient, fields_filter: Option<&str>) -> Result<(), C
 
     let viewer_value = if let Some(filter_str) = fields_filter {
         let parsed_fields = fields::parse_fields(filter_str);
-        filter_json_nodes(&raw_response["viewer"], &parsed_fields, USER_MANDATORY_FIELDS)
+        filter_json_nodes(
+            &raw_response["viewer"],
+            &parsed_fields,
+            USER_MANDATORY_FIELDS,
+        )
     } else {
         raw_response["viewer"].clone()
     };

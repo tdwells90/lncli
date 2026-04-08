@@ -1,4 +1,4 @@
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
+use reqwest::header::{AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderValue};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use std::time::Duration;
@@ -76,16 +76,15 @@ impl GraphqlClient {
         let response_json: Value = serde_json::from_str(&response_text)
             .map_err(|e| CliError::GraphqlError(format!("Failed to parse response: {e}")))?;
 
-        if let Some(errors) = response_json.get("errors") {
-            if let Some(arr) = errors.as_array() {
-                if let Some(first) = arr.first() {
-                    let msg = first
-                        .get("message")
-                        .and_then(|m| m.as_str())
-                        .unwrap_or("Unknown GraphQL error");
-                    return Err(CliError::GraphqlError(msg.to_string()));
-                }
-            }
+        if let Some(errors) = response_json.get("errors")
+            && let Some(arr) = errors.as_array()
+            && let Some(first) = arr.first()
+        {
+            let msg = first
+                .get("message")
+                .and_then(|m| m.as_str())
+                .unwrap_or("Unknown GraphQL error");
+            return Err(CliError::GraphqlError(msg.to_string()));
         }
 
         response_json

@@ -26,10 +26,10 @@ pub fn parse_issue_identifier(value: &str) -> Option<(String, u32)> {
 
 /// Extract a document slug ID from a Linear document URL, or return the input as-is.
 pub fn extract_document_id(value: &str) -> String {
-    if let Some(caps) = DOCUMENT_URL_RE.captures(value) {
-        if let Some(m) = caps.get(1) {
-            return m.as_str().to_string();
-        }
+    if let Some(caps) = DOCUMENT_URL_RE.captures(value)
+        && let Some(m) = caps.get(1)
+    {
+        return m.as_str().to_string();
     }
     value.to_string()
 }
