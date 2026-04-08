@@ -179,6 +179,34 @@ pub enum IssuesCommand {
         issue_id: String,
     },
 
+    /// Link two issues with a typed relation
+    Link {
+        /// Source issue UUID or identifier like ABC-123
+        issue_id: String,
+
+        /// Target issue that this issue blocks
+        #[arg(long, conflicts_with_all = ["blocked_by", "relates_to", "duplicates"])]
+        blocks: Option<String>,
+
+        /// Target issue that blocks this issue
+        #[arg(long, conflicts_with_all = ["blocks", "relates_to", "duplicates"])]
+        blocked_by: Option<String>,
+
+        /// Target issue related to this issue
+        #[arg(long, conflicts_with_all = ["blocks", "blocked_by", "duplicates"])]
+        relates_to: Option<String>,
+
+        /// Target issue that this issue duplicates
+        #[arg(long, conflicts_with_all = ["blocks", "blocked_by", "relates_to"])]
+        duplicates: Option<String>,
+    },
+
+    /// Remove an issue relation by its relation ID
+    Unlink {
+        /// Issue relation UUID (visible in `issues read` output)
+        relation_id: String,
+    },
+
     /// Update an existing issue
     Update {
         /// Issue UUID or identifier like ABC-123

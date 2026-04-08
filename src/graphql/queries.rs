@@ -19,6 +19,13 @@ pub const ISSUE_RELATIONS: &str = "
     labels { nodes { id name } }
     parent { id identifier title }
     children { nodes { id identifier title } }
+    relations(first: 25) {
+        nodes {
+            id
+            type
+            relatedIssue { id identifier title }
+        }
+    }
 ";
 
 pub const ISSUE_COMMENTS_FRAGMENT: &str = "
@@ -287,6 +294,27 @@ pub const ISSUE_UPDATE: &str = "
 pub const ISSUE_DELETE: &str = "
     mutation IssueDelete($id: String!) {
         issueDelete(id: $id) {
+            success
+        }
+    }
+";
+
+pub const ISSUE_RELATION_CREATE: &str = "
+    mutation IssueRelationCreate($input: IssueRelationCreateInput!) {
+        issueRelationCreate(input: $input) {
+            success
+            issueRelation {
+                id
+                type
+                relatedIssue { id identifier title }
+            }
+        }
+    }
+";
+
+pub const ISSUE_RELATION_DELETE: &str = "
+    mutation IssueRelationDelete($id: String!) {
+        issueRelationDelete(id: $id) {
             success
         }
     }

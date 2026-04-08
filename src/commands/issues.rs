@@ -3,8 +3,9 @@ use crate::commands::{resolve_assignee_id, resolve_issue_id, resolve_project_id,
 use crate::graphql::client::GraphqlClient;
 use crate::graphql::queries;
 use crate::models::{
-    Issue, IssueCreateResponse, IssueDeleteResponse, IssueSearchResponse, IssueUpdateResponse,
-    IssuesResponse, SingleIssueResponse,
+    Issue, IssueCreateResponse, IssueDeleteResponse, IssueRelationCreateResponse,
+    IssueRelationDeleteResponse, IssueSearchResponse, IssueUpdateResponse, IssuesResponse,
+    SingleIssueResponse,
 };
 use crate::utils::embed_parser;
 use crate::utils::error::CliError;
@@ -46,6 +47,19 @@ pub async fn execute(
             .await
         }
         IssuesCommand::Delete { issue_id } => delete(client, &issue_id).await,
+        IssuesCommand::Link {
+            issue_id,
+            blocks,
+            blocked_by,
+            relates_to,
+            duplicates,
+        } => {
+            link_issues(
+                client, &issue_id, blocks, blocked_by, relates_to, duplicates,
+            )
+            .await
+        }
+        IssuesCommand::Unlink { relation_id } => unlink(client, &relation_id).await,
         IssuesCommand::Create {
             title,
             description,
@@ -133,6 +147,73 @@ async fn delete(client: &GraphqlClient, issue_id: &str) -> Result<(), CliError> 
         output::print_json(&serde_json::json!({ "success": true, "id": resolved_id }));
     } else {
         return Err(CliError::Other("Failed to delete issue".to_string()));
+    }
+    Ok(())
+}
+
+async fn link_issues(
+    client: &GraphqlClient,
+    issue_id: &str,
+    blocks: Option<String>,
+    blocked_by: Option<String>,
+    relates_to: Option<String>,
+    duplicates: Option<String>,
+) -> Result<(), CliError> {
+    let (relation_type, target_identifier) = if let Some(target) = blocks {
+        ("blocks", target)
+    } else if let Some(target) = blocked_by {
+        ("blockedBy", target)
+    } else if let Some(target) = relates_to {
+        ("related", target)
+    } else if let Some(target) = duplicates {
+        ("duplicate", target)
+    } else {
+        return Err(CliError::InvalidParameter {
+            param: "link".to_string(),
+            reason: "Exactly one of --blocks, --blocked-by, --relates-to, or --duplicates must be provided".to_string(),
+        });
+    };
+
+    let source_id = resolve_issue_id(client, issue_id).await?;
+    let target_id = resolve_issue_id(client, &target_identifier).await?;
+
+    let input = serde_json::json!({
+        "issueId": source_id,
+        "relatedIssueId": target_id,
+        "type": relation_type,
+    });
+
+    let response: IssueRelationCreateResponse = client
+        .request(
+            queries::ISSUE_RELATION_CREATE,
+            serde_json::json!({ "input": input }),
+        )
+        .await?;
+
+    if response.issue_relation_create.success {
+        output::print_json(&response.issue_relation_create.issue_relation);
+    } else {
+        return Err(CliError::Other(
+            "Failed to create issue relation".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+async fn unlink(client: &GraphqlClient, relation_id: &str) -> Result<(), CliError> {
+    let response: IssueRelationDeleteResponse = client
+        .request(
+            queries::ISSUE_RELATION_DELETE,
+            serde_json::json!({ "id": relation_id }),
+        )
+        .await?;
+
+    if response.issue_relation_delete.success {
+        output::print_json(&serde_json::json!({ "success": true, "id": relation_id }));
+    } else {
+        return Err(CliError::Other(
+            "Failed to delete issue relation".to_string(),
+        ));
     }
     Ok(())
 }
