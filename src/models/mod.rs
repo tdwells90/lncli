@@ -683,6 +683,27 @@ pub struct NotificationsResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct PageInfo {
+    pub has_next_page: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end_cursor: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PaginatedNodes<T> {
+    pub nodes: Vec<T>,
+    pub page_info: PageInfo,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotificationsPaginatedResponse {
+    pub notifications: PaginatedNodes<NotificationBrief>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NotificationUpdateResponse {
     pub notification_update: NotificationMutationResult,
 }

@@ -717,6 +717,21 @@ pub const NOTIFICATIONS_LIST: &str = "
     }
 ";
 
+pub const NOTIFICATIONS_LIST_PAGINATED: &str = "
+    query NotificationsListPaginated($first: Int!, $after: String) {
+        notifications(first: $first, after: $after) {
+            nodes {
+                id
+                readAt
+            }
+            pageInfo {
+                hasNextPage
+                endCursor
+            }
+        }
+    }
+";
+
 pub const NOTIFICATION_UPDATE: &str = "
     mutation NotificationUpdate($id: String!, $input: NotificationUpdateInput!) {
         notificationUpdate(id: $id, input: $input) {

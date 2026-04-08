@@ -1,14 +1,17 @@
 use crate::cli::{NotificationsArgs, NotificationsCommand};
 use crate::graphql::client::GraphqlClient;
 use crate::graphql::queries;
-use crate::models::{NotificationUpdateResponse, NotificationsResponse};
+use crate::models::{
+    NotificationUpdateResponse, NotificationsPaginatedResponse, NotificationsResponse,
+};
 use crate::utils::error::CliError;
 use crate::utils::fields::{self, filter_json_nodes};
 use crate::utils::output;
 use chrono::Utc;
 
 const NOTIFICATION_MANDATORY_FIELDS: &[&str] = &["id"];
-const MARK_ALL_READ_CAP: u32 = 250;
+const NOTIFICATION_UNREAD_MANDATORY_FIELDS: &[&str] = &["id", "readAt"];
+const MARK_ALL_PAGE_SIZE: u32 = 250;
 
 pub async fn execute(
     client: &GraphqlClient,
@@ -53,13 +56,17 @@ async fn list(
         )
         .await?;
 
+    // When --unread is set, readAt must survive field filtering so the
+    // client-side filter can distinguish read from unread notifications.
+    let mandatory = if unread {
+        NOTIFICATION_UNREAD_MANDATORY_FIELDS
+    } else {
+        NOTIFICATION_MANDATORY_FIELDS
+    };
+
     let notifications_value = if let Some(filter_str) = fields_filter {
         let parsed_fields = fields::parse_fields(filter_str);
-        filter_json_nodes(
-            &raw_response["notifications"],
-            &parsed_fields,
-            NOTIFICATION_MANDATORY_FIELDS,
-        )
+        filter_json_nodes(&raw_response["notifications"], &parsed_fields, mandatory)
     } else {
         raw_response["notifications"].clone()
     };
@@ -105,26 +112,32 @@ async fn mark_read(client: &GraphqlClient, notification_id: &str) -> Result<(), 
 }
 
 async fn mark_all_read(client: &GraphqlClient) -> Result<(), CliError> {
-    let raw_response: serde_json::Value = client
-        .request_raw(
-            queries::NOTIFICATIONS_LIST,
-            serde_json::json!({ "first": MARK_ALL_READ_CAP }),
-        )
-        .await?;
+    // Paginate through all notifications to collect unread IDs.
+    let mut unread_ids: Vec<String> = Vec::new();
+    let mut cursor: Option<String> = None;
 
-    let response: NotificationsResponse = serde_json::from_value(
-        serde_json::json!({ "notifications": raw_response["notifications"] }),
-    )?;
+    loop {
+        let mut vars = serde_json::json!({ "first": MARK_ALL_PAGE_SIZE });
+        if let Some(ref c) = cursor {
+            vars["after"] = serde_json::json!(c);
+        }
 
-    let total_fetched = response.notifications.nodes.len() as u32;
+        let response: NotificationsPaginatedResponse = client
+            .request(queries::NOTIFICATIONS_LIST_PAGINATED, vars)
+            .await?;
 
-    let unread_ids: Vec<String> = response
-        .notifications
-        .nodes
-        .iter()
-        .filter(|n| n.read_at.is_none())
-        .map(|n| n.id.clone())
-        .collect();
+        for n in &response.notifications.nodes {
+            if n.read_at.is_none() {
+                unread_ids.push(n.id.clone());
+            }
+        }
+
+        if response.notifications.page_info.has_next_page {
+            cursor = response.notifications.page_info.end_cursor;
+        } else {
+            break;
+        }
+    }
 
     if unread_ids.is_empty() {
         output::print_json(&serde_json::json!({
@@ -154,11 +167,9 @@ async fn mark_all_read(client: &GraphqlClient) -> Result<(), CliError> {
         })
         .count() as u32;
 
-    let capped = total_fetched >= MARK_ALL_READ_CAP;
     output::print_json(&serde_json::json!({
         "success": true,
-        "count": marked_count,
-        "capped": capped
+        "count": marked_count
     }));
     Ok(())
 }
