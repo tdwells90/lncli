@@ -648,3 +648,57 @@ pub struct WorkflowState {
 pub struct WorkflowStatesResponse {
     pub workflow_states: Nodes<WorkflowState>,
 }
+
+// ── Notification ─────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Notification {
+    pub id: String,
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub notification_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub read_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub created_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<String>,
+    // IssueNotification fields
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub issue: Option<IssueRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub comment: Option<Comment>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub actor: Option<UserRef>,
+    // ProjectNotification fields
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project: Option<ProjectRef>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotificationsResponse {
+    pub notifications: Nodes<Notification>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotificationUpdateResponse {
+    pub notification_update: NotificationMutationResult,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotificationMutationResult {
+    pub success: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub notification: Option<NotificationBrief>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotificationBrief {
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub read_at: Option<String>,
+}
