@@ -55,8 +55,8 @@ lncli issues list --fields id,identifier,title,assignee.email
 lncli issues read ENG-123
 
 # Create and update
-lncli issues create --title "Bug fix" --team-id <id>
-lncli issues update ENG-123 --state "Done"
+lncli issues create --title "Bug fix" --team <key>
+lncli issues update ENG-123 --status "Done"
 ```
 ````
 
