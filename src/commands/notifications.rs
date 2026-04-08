@@ -8,6 +8,7 @@ use crate::utils::output;
 use chrono::Utc;
 
 const NOTIFICATION_MANDATORY_FIELDS: &[&str] = &["id"];
+const MARK_ALL_READ_CAP: u32 = 250;
 
 pub async fn execute(
     client: &GraphqlClient,
@@ -25,7 +26,11 @@ pub async fn execute(
             if all {
                 mark_all_read(client).await
             } else {
-                mark_read(client, &notification_id.unwrap()).await
+                mark_read(
+                    client,
+                    &notification_id.expect("clap guarantees notification_id when --all is absent"),
+                )
+                .await
             }
         }
     }
@@ -37,10 +42,14 @@ async fn list(
     unread: bool,
     fields_filter: Option<&str>,
 ) -> Result<(), CliError> {
+    // When filtering to unread, over-fetch so we can return up to `limit`
+    // unread notifications even when many recent notifications are already read.
+    let fetch_count = if unread { limit * 5 } else { limit };
+
     let raw_response: serde_json::Value = client
         .request_raw(
             queries::NOTIFICATIONS_LIST,
-            serde_json::json!({ "first": limit }),
+            serde_json::json!({ "first": fetch_count }),
         )
         .await?;
 
@@ -58,12 +67,13 @@ async fn list(
     let response: NotificationsResponse =
         serde_json::from_value(serde_json::json!({ "notifications": notifications_value }))?;
 
-    let notifications = if unread {
+    let notifications: Vec<_> = if unread {
         response
             .notifications
             .nodes
             .into_iter()
             .filter(|n| n.read_at.is_none())
+            .take(limit as usize)
             .collect()
     } else {
         response.notifications.nodes
@@ -98,7 +108,7 @@ async fn mark_all_read(client: &GraphqlClient) -> Result<(), CliError> {
     let raw_response: serde_json::Value = client
         .request_raw(
             queries::NOTIFICATIONS_LIST,
-            serde_json::json!({ "first": 250 }),
+            serde_json::json!({ "first": MARK_ALL_READ_CAP }),
         )
         .await?;
 
@@ -106,14 +116,17 @@ async fn mark_all_read(client: &GraphqlClient) -> Result<(), CliError> {
         serde_json::json!({ "notifications": raw_response["notifications"] }),
     )?;
 
-    let unread: Vec<_> = response
+    let total_fetched = response.notifications.nodes.len() as u32;
+
+    let unread_ids: Vec<String> = response
         .notifications
         .nodes
         .iter()
         .filter(|n| n.read_at.is_none())
+        .map(|n| n.id.clone())
         .collect();
 
-    if unread.is_empty() {
+    if unread_ids.is_empty() {
         output::print_json(&serde_json::json!({
             "success": true,
             "message": "No unread notifications",
@@ -123,25 +136,29 @@ async fn mark_all_read(client: &GraphqlClient) -> Result<(), CliError> {
     }
 
     let now = Utc::now().to_rfc3339();
-    let mut marked_count = 0u32;
 
-    for notification in &unread {
+    let mut handles = Vec::with_capacity(unread_ids.len());
+    for id in &unread_ids {
         let input = serde_json::json!({ "readAt": now });
-        let result: NotificationUpdateResponse = client
-            .request(
-                queries::NOTIFICATION_UPDATE,
-                serde_json::json!({ "id": notification.id, "input": input }),
-            )
-            .await?;
-
-        if result.notification_update.success {
-            marked_count += 1;
-        }
+        let vars = serde_json::json!({ "id": id, "input": input });
+        handles
+            .push(client.request::<NotificationUpdateResponse>(queries::NOTIFICATION_UPDATE, vars));
     }
 
+    let results = futures::future::join_all(handles).await;
+    let marked_count = results
+        .iter()
+        .filter(|r| {
+            r.as_ref()
+                .is_ok_and(|resp| resp.notification_update.success)
+        })
+        .count() as u32;
+
+    let capped = total_fetched >= MARK_ALL_READ_CAP;
     output::print_json(&serde_json::json!({
         "success": true,
-        "count": marked_count
+        "count": marked_count,
+        "capped": capped
     }));
     Ok(())
 }
