@@ -101,22 +101,22 @@ async fn create(
     let doc = response.document_create.document.as_ref();
 
     // Attach to issue if requested
-    if let Some(ref issue_val) = attach_to {
-        if let Some(doc) = doc {
-            let issue_id = resolve_issue_id(client, issue_val).await?;
-            let doc_url = format!("https://linear.app/document/{}", &doc.id);
-            let attach_input = serde_json::json!({
-                "issueId": issue_id,
-                "title": doc.title,
-                "url": doc_url,
-            });
-            let _: AttachmentCreateResponse = client
-                .request(
-                    queries::ATTACHMENT_CREATE,
-                    serde_json::json!({ "input": attach_input }),
-                )
-                .await?;
-        }
+    if let Some(ref issue_val) = attach_to
+        && let Some(doc) = doc
+    {
+        let issue_id = resolve_issue_id(client, issue_val).await?;
+        let doc_url = format!("https://linear.app/document/{}", &doc.id);
+        let attach_input = serde_json::json!({
+            "issueId": issue_id,
+            "title": doc.title,
+            "url": doc_url,
+        });
+        let _: AttachmentCreateResponse = client
+            .request(
+                queries::ATTACHMENT_CREATE,
+                serde_json::json!({ "input": attach_input }),
+            )
+            .await?;
     }
 
     output::print_json(&response.document_create.document);
@@ -260,18 +260,19 @@ async fn list_by_issue(client: &GraphqlClient, issue_val: &str) -> Result<(), Cl
     // Extract document IDs from attachment URLs
     let mut documents: Vec<Document> = Vec::new();
     for attachment in &response.attachments.nodes {
-        if let Some(ref url) = attachment.url {
-            if url.contains("linear.app") && url.contains("/document/") {
-                let doc_id = extract_document_id(url);
-                if let Ok(doc_resp) = client
-                    .request::<SingleDocumentResponse>(
-                        queries::DOCUMENT_READ,
-                        serde_json::json!({ "id": doc_id }),
-                    )
-                    .await
-                {
-                    documents.push(doc_resp.document);
-                }
+        if let Some(ref url) = attachment.url
+            && url.contains("linear.app")
+            && url.contains("/document/")
+        {
+            let doc_id = extract_document_id(url);
+            if let Ok(doc_resp) = client
+                .request::<SingleDocumentResponse>(
+                    queries::DOCUMENT_READ,
+                    serde_json::json!({ "id": doc_id }),
+                )
+                .await
+            {
+                documents.push(doc_resp.document);
             }
         }
     }

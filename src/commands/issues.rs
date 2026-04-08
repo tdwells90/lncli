@@ -21,9 +21,7 @@ pub async fn execute(
     fields_filter: Option<&str>,
 ) -> Result<(), CliError> {
     match args.command {
-        IssuesCommand::List { limit, project } => {
-            list(client, limit, project, fields_filter).await
-        }
+        IssuesCommand::List { limit, project } => list(client, limit, project, fields_filter).await,
         IssuesCommand::Read { issue_id, project } => {
             read(client, &issue_id, project, fields_filter).await
         }
@@ -497,31 +495,31 @@ async fn update(
     }
 
     // Label resolution
-    if let Some(ref labels_val) = labels {
-        if !clear_labels {
-            let team_id = issue_data
-                .as_ref()
-                .and_then(|i| i.team.as_ref())
-                .and_then(|t| t.id.as_deref());
-            let new_label_ids = resolve_label_ids(client, labels_val, team_id).await?;
+    if let Some(ref labels_val) = labels
+        && !clear_labels
+    {
+        let team_id = issue_data
+            .as_ref()
+            .and_then(|i| i.team.as_ref())
+            .and_then(|t| t.id.as_deref());
+        let new_label_ids = resolve_label_ids(client, labels_val, team_id).await?;
 
-            match label_by {
-                LabelMode::Adding => {
-                    let mut all_ids: Vec<String> = issue_data
-                        .as_ref()
-                        .and_then(|i| i.labels.as_ref())
-                        .map(|l| l.nodes.iter().map(|n| n.id.clone()).collect())
-                        .unwrap_or_default();
-                    for id in new_label_ids {
-                        if !all_ids.contains(&id) {
-                            all_ids.push(id);
-                        }
+        match label_by {
+            LabelMode::Adding => {
+                let mut all_ids: Vec<String> = issue_data
+                    .as_ref()
+                    .and_then(|i| i.labels.as_ref())
+                    .map(|l| l.nodes.iter().map(|n| n.id.clone()).collect())
+                    .unwrap_or_default();
+                for id in new_label_ids {
+                    if !all_ids.contains(&id) {
+                        all_ids.push(id);
                     }
-                    input.insert("labelIds".to_string(), serde_json::json!(all_ids));
                 }
-                LabelMode::Overwriting => {
-                    input.insert("labelIds".to_string(), serde_json::json!(new_label_ids));
-                }
+                input.insert("labelIds".to_string(), serde_json::json!(all_ids));
+            }
+            LabelMode::Overwriting => {
+                input.insert("labelIds".to_string(), serde_json::json!(new_label_ids));
             }
         }
     }
@@ -636,10 +634,11 @@ async fn resolve_label_ids(
 
         // Try team-scoped labels first
         let found_in_team = team_labels.as_ref().and_then(|tl| {
-            tl.issue_labels
-                .nodes
-                .iter()
-                .find(|l| l.name.as_deref().is_some_and(|n| n.eq_ignore_ascii_case(name)))
+            tl.issue_labels.nodes.iter().find(|l| {
+                l.name
+                    .as_deref()
+                    .is_some_and(|n| n.eq_ignore_ascii_case(name))
+            })
         });
 
         if let Some(label) = found_in_team {
@@ -662,7 +661,11 @@ async fn resolve_label_ids(
             .issue_labels
             .nodes
             .iter()
-            .find(|l| l.name.as_deref().is_some_and(|n| n.eq_ignore_ascii_case(name)));
+            .find(|l| {
+                l.name
+                    .as_deref()
+                    .is_some_and(|n| n.eq_ignore_ascii_case(name))
+            });
 
         match found_in_ws {
             Some(label) => ids.push(label.id.clone()),
@@ -698,7 +701,11 @@ async fn resolve_status_id(
         .workflow_states
         .nodes
         .iter()
-        .find(|s| s.name.as_deref().is_some_and(|n| n.eq_ignore_ascii_case(status)))
+        .find(|s| {
+            s.name
+                .as_deref()
+                .is_some_and(|n| n.eq_ignore_ascii_case(status))
+        })
         .map(|s| s.id.clone())
         .ok_or_else(|| CliError::NotFound {
             entity: "Status".to_string(),

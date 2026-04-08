@@ -183,7 +183,11 @@ async fn resolve_label_id(client: &GraphqlClient, label: &str) -> Result<String,
         .issue_labels
         .nodes
         .iter()
-        .find(|l| l.name.as_deref().is_some_and(|n| n.eq_ignore_ascii_case(label)))
+        .find(|l| {
+            l.name
+                .as_deref()
+                .is_some_and(|n| n.eq_ignore_ascii_case(label))
+        })
         .map(|l| l.id.clone())
         .ok_or_else(|| CliError::NotFound {
             entity: "Label".to_string(),
