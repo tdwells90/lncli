@@ -109,7 +109,7 @@ pub enum IssuesCommand {
         #[arg(long)]
         team: Option<String>,
 
-        /// Filter by assignee ID
+        /// Filter by assignee ("me" for yourself, or user ID)
         #[arg(long)]
         assignee: Option<String>,
 
@@ -136,7 +136,7 @@ pub enum IssuesCommand {
         #[arg(short, long)]
         description: Option<String>,
 
-        /// Assign to user ID
+        /// Assign to user ("me" for yourself, or user ID)
         #[arg(short, long)]
         assignee: Option<String>,
 
@@ -200,7 +200,7 @@ pub enum IssuesCommand {
         #[arg(short, long, value_parser = clap::value_parser!(u8).range(1..=4))]
         priority: Option<u8>,
 
-        /// New assignee ID
+        /// New assignee ("me" for yourself, or user ID)
         #[arg(short, long)]
         assignee: Option<String>,
 
