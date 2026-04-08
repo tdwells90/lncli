@@ -1,5 +1,5 @@
 use crate::cli::{IssuesArgs, IssuesCommand, LabelMode};
-use crate::commands::{resolve_issue_id, resolve_project_id, resolve_team_id};
+use crate::commands::{resolve_assignee_id, resolve_issue_id, resolve_project_id, resolve_team_id};
 use crate::graphql::client::GraphqlClient;
 use crate::graphql::queries;
 use crate::models::{
@@ -292,9 +292,10 @@ async fn search(
     }
 
     if let Some(ref assignee_val) = assignee {
+        let assignee_id = resolve_assignee_id(client, assignee_val).await?;
         filter.insert(
             "assignee".to_string(),
-            serde_json::json!({ "id": { "eq": assignee_val } }),
+            serde_json::json!({ "id": { "eq": assignee_id } }),
         );
     }
 
@@ -373,7 +374,8 @@ async fn create(
         input["description"] = serde_json::json!(desc);
     }
     if let Some(ref assignee_val) = assignee {
-        input["assigneeId"] = serde_json::json!(assignee_val);
+        let assignee_id = resolve_assignee_id(client, assignee_val).await?;
+        input["assigneeId"] = serde_json::json!(assignee_id);
     }
     if let Some(p) = priority {
         input["priority"] = serde_json::json!(p);
@@ -457,7 +459,8 @@ async fn update(
         input.insert("priority".to_string(), serde_json::json!(p));
     }
     if let Some(ref a) = assignee {
-        input.insert("assigneeId".to_string(), serde_json::json!(a));
+        let assignee_id = resolve_assignee_id(client, a).await?;
+        input.insert("assigneeId".to_string(), serde_json::json!(assignee_id));
     }
     if let Some(ref project_val) = project {
         let project_id = resolve_project_id(client, project_val).await?;

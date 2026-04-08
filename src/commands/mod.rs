@@ -14,9 +14,28 @@ use crate::graphql::client::GraphqlClient;
 use crate::graphql::queries;
 use crate::models::{
     CyclesResponse, IssuesResponse, ProjectMilestonesResponse, ProjectsResponse, TeamsResponse,
+    ViewerResponse,
 };
 use crate::utils::error::CliError;
 use crate::utils::identifiers::{is_uuid, parse_issue_identifier};
+
+/// Resolve an assignee value to a user UUID.
+/// Accepts "me" (resolves via viewer query) or a UUID (pass-through).
+pub async fn resolve_assignee_id(
+    client: &GraphqlClient,
+    assignee: &str,
+) -> Result<String, CliError> {
+    if assignee.eq_ignore_ascii_case("me") {
+        let raw_response: serde_json::Value = client
+            .request_raw(queries::VIEWER, serde_json::json!({}))
+            .await?;
+        let response: ViewerResponse =
+            serde_json::from_value(serde_json::json!({ "viewer": raw_response["viewer"] }))?;
+        return Ok(response.viewer.id);
+    }
+
+    Ok(assignee.to_string())
+}
 
 /// Resolve a team key, name, or ID to a team UUID.
 pub async fn resolve_team_id(client: &GraphqlClient, team: &str) -> Result<String, CliError> {
