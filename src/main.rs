@@ -56,6 +56,9 @@ async fn run(cli: Cli) -> Result<(), utils::error::CliError> {
                     commands::documents::execute(&client, args, fields).await
                 }
                 Commands::Embeds(args) => commands::embeds::execute(&client, args).await,
+                Commands::Notifications(args) => {
+                    commands::notifications::execute(&client, args, fields).await
+                }
             }
         }
     }
@@ -74,7 +77,8 @@ fn print_command_groups() {
             {"name": "users", "description": "User operations (list)"},
             {"name": "projects", "description": "Project operations (list, read, create, update, delete)"},
             {"name": "cycles", "description": "Cycle operations (list, read, create, update)"},
-            {"name": "project-milestones", "description": "Project milestone operations (list, read, create, update, delete)"}
+            {"name": "project-milestones", "description": "Project milestone operations (list, read, create, update, delete)"},
+            {"name": "notifications", "description": "Notification operations (list, mark-read)"}
         ]
     });
     output::print_json(&groups);

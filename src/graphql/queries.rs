@@ -719,3 +719,55 @@ pub const FILE_UPLOAD_URL: &str = "
         }
     }
 ";
+
+// ── Notifications ────────────────────────────────────────────────────────────
+
+pub const NOTIFICATIONS_LIST: &str = "
+    query NotificationsList($first: Int!) {
+        notifications(first: $first) {
+            nodes {
+                id
+                type
+                readAt
+                createdAt
+                updatedAt
+                ... on IssueNotification {
+                    issue { id identifier title }
+                    comment { id body }
+                    actor { id name email }
+                }
+                ... on ProjectNotification {
+                    project { id name }
+                    actor { id name email }
+                }
+            }
+        }
+    }
+";
+
+pub const NOTIFICATIONS_LIST_PAGINATED: &str = "
+    query NotificationsListPaginated($first: Int!, $after: String) {
+        notifications(first: $first, after: $after) {
+            nodes {
+                id
+                readAt
+            }
+            pageInfo {
+                hasNextPage
+                endCursor
+            }
+        }
+    }
+";
+
+pub const NOTIFICATION_UPDATE: &str = "
+    mutation NotificationUpdate($id: String!, $input: NotificationUpdateInput!) {
+        notificationUpdate(id: $id, input: $input) {
+            success
+            notification {
+                id
+                readAt
+            }
+        }
+    }
+";

@@ -4,6 +4,7 @@ pub mod documents;
 pub mod embeds;
 pub mod issues;
 pub mod labels;
+pub mod notifications;
 pub mod project_milestones;
 pub mod projects;
 pub mod teams;

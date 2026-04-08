@@ -67,6 +67,43 @@ pub enum Commands {
     /// Project milestone operations
     #[command(name = "project-milestones")]
     ProjectMilestones(ProjectMilestonesArgs),
+
+    /// Notification operations
+    Notifications(NotificationsArgs),
+}
+
+// ── Notifications ───────────────────────────────────────────────────────────
+
+#[derive(Args)]
+pub struct NotificationsArgs {
+    #[command(subcommand)]
+    pub command: NotificationsCommand,
+}
+
+#[derive(Subcommand)]
+pub enum NotificationsCommand {
+    /// List notifications
+    List {
+        /// Maximum number of notifications to return
+        #[arg(short, long, default_value = "50")]
+        limit: u32,
+
+        /// Only show unread notifications
+        #[arg(long)]
+        unread: bool,
+    },
+
+    /// Mark notification(s) as read
+    #[command(name = "mark-read")]
+    MarkRead {
+        /// Notification UUID to mark as read
+        #[arg(required_unless_present = "all")]
+        notification_id: Option<String>,
+
+        /// Mark all unread notifications as read
+        #[arg(long, conflicts_with = "notification_id")]
+        all: bool,
+    },
 }
 
 // ── Issues ──────────────────────────────────────────────────────────────────

@@ -67,6 +67,10 @@ pub fn execute() {
                 {"command": "project-milestones create", "flags": "--name <name> --project <project> [-d, --description <desc>] [--target-date <YYYY-MM-DD>]", "description": "Create a milestone. --name and --project are required."},
                 {"command": "project-milestones update <milestoneIdOrName>", "flags": "[--project <project>] [-n, --name <name>] [-d, --description <desc>] [--target-date <YYYY-MM-DD>] [--sort-order <n>]", "description": "Update a milestone."},
                 {"command": "project-milestones delete <milestoneIdOrName>", "flags": "[--project <project>]", "description": "Delete a milestone."}
+            ],
+            "notifications": [
+                {"command": "notifications list", "flags": "[-l, --limit <n=50>] [--unread]", "description": "List notifications. Use --unread to show only unread notifications."},
+                {"command": "notifications mark-read <notificationId>", "flags": "[--all]", "description": "Mark a notification as read. Use --all to mark all unread notifications as read."}
             ]
         }
     });
