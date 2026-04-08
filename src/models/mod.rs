@@ -64,6 +64,16 @@ pub struct IssueRef {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct IssueRelation {
+    pub id: String,
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub relation_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub related_issue: Option<IssueRef>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CycleRef {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -284,6 +294,8 @@ pub struct Issue {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub children: Option<Nodes<IssueRef>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub relations: Option<Nodes<IssueRelation>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub comments: Option<Nodes<Comment>>,
     #[serde(skip_deserializing, skip_serializing_if = "Option::is_none")]
     pub embeds: Option<Vec<crate::utils::embed_parser::EmbedInfo>>,
@@ -340,6 +352,27 @@ pub struct IssueUpdateResponse {
 #[serde(rename_all = "camelCase")]
 pub struct IssueDeleteResponse {
     pub issue_delete: DeleteResult,
+}
+
+// ── Issue Relation ──────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IssueRelationCreateResponse {
+    pub issue_relation_create: IssueRelationCreateResult,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IssueRelationCreateResult {
+    pub success: bool,
+    pub issue_relation: Option<IssueRelation>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IssueRelationDeleteResponse {
+    pub issue_relation_delete: DeleteResult,
 }
 
 // ── Comment ──────────────────────────────────────────────────────────────────
