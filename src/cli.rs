@@ -194,7 +194,7 @@ pub enum IssuesCommand {
         labels: Option<String>,
 
         /// Project milestone name or ID (requires --project)
-        #[arg(long)]
+        #[arg(long, alias = "milestone")]
         project_milestone: Option<String>,
 
         /// Cycle name or ID (requires --team)
@@ -297,7 +297,7 @@ pub enum IssuesCommand {
 
         // ── Project milestone group ──
         /// Set project milestone (name or ID)
-        #[arg(long, conflicts_with = "clear_project_milestone")]
+        #[arg(long, alias = "milestone", conflicts_with = "clear_project_milestone")]
         project_milestone: Option<String>,
 
         /// Clear existing milestone assignment
